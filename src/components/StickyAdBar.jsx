@@ -5,7 +5,7 @@ import AdZoneScript from "./AdZoneScript.jsx";
 export default function StickyAdBar() {
   return (
     <div className="ad-sticky-bottom" id="ad-sticky-bottom">
-      <ins className="eas5900606" data-zoneid="5900606" data-keywords="adult" data-block-ad-types="0" />
+      <ins className="eas6a97888e2" data-zoneid="5900606" data-keywords="adult" data-block-ad-types="0" />
       <AdZoneScript />
       <button
         className="ad-sticky-bottom__close"

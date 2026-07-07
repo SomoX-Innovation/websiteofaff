@@ -157,6 +157,36 @@ export default function AdminApp() {
           </section>
 
           <section className="admin-section">
+            <div className="admin-section__head">
+              <h2 className="admin-section__title">PDF stories (/stories)</h2>
+              <button type="button" className="btn btn--primary btn--sm" id="btn-story-new">
+                Add story
+              </button>
+            </div>
+            <p className="admin-section__hint">
+              Episodic PDF comics/stories. Paste full <strong>https://…</strong> URLs for the PDF and cover image.
+              Rows need <strong>Active</strong> + a <strong>PDF URL</strong> to appear on <code>/stories</code> (run{" "}
+              <code>supabase/migrations/009_stories.sql</code> if the table is missing).
+            </p>
+            <div className="admin-table-wrap">
+              <table className="admin-table" id="table-stories">
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Series</th>
+                    <th>Ep.</th>
+                    <th>PDF</th>
+                    <th>Order</th>
+                    <th>Active</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-stories" />
+              </table>
+            </div>
+          </section>
+
+          <section className="admin-section">
             <h2 className="admin-section__title">Contact messages</h2>
             <div className="admin-table-wrap">
               <table className="admin-table admin-table--contacts" id="table-contacts">
@@ -301,6 +331,140 @@ export default function AdminApp() {
           </label>
           <div className="admin-dialog__actions">
             <button type="button" className="btn btn--ghost" id="offer-cancel">
+              Cancel
+            </button>
+            <button type="submit" className="btn btn--primary" value="save">
+              Save
+            </button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="dlg-story" className="admin-dialog admin-dialog--wide">
+        <form id="form-story" className="admin-dialog__inner">
+          <h3 className="admin-dialog__title" id="dlg-story-title">
+            Story
+          </h3>
+          <input type="hidden" name="id" id="story-id" />
+          <label className="field">
+            <span className="field__label">Title</span>
+            <input type="text" name="title" className="field__input" required maxLength={200} id="story-title-input" />
+          </label>
+          <label className="field">
+            <span className="field__label">Description</span>
+            <textarea
+              name="description"
+              className="field__input field__input--area"
+              rows={3}
+              maxLength={2000}
+              id="story-desc"
+            />
+          </label>
+          <label className="field">
+            <span className="field__label">PDF URL (required)</span>
+            <input
+              type="url"
+              name="pdf_url"
+              className="field__input"
+              required
+              maxLength={2000}
+              id="story-pdf"
+              placeholder="https://…/my-story-episode-1.pdf"
+            />
+            <span className="field__hint">
+              Must be a direct link that opens the PDF in the browser (not an HTML download page).
+            </span>
+          </label>
+          <label className="field">
+            <span className="field__label">Cover image URL (optional)</span>
+            <input
+              type="url"
+              name="cover_url"
+              className="field__input"
+              maxLength={2000}
+              id="story-cover"
+              placeholder="https://…/cover.jpg"
+            />
+          </label>
+          <div className="field__row">
+            <label className="field">
+              <span className="field__label">Series name</span>
+              <input
+                type="text"
+                name="series"
+                className="field__input"
+                maxLength={120}
+                id="story-series"
+                placeholder="e.g. My Comic Series"
+              />
+            </label>
+            <label className="field">
+              <span className="field__label">Episode #</span>
+              <input type="number" name="episode" className="field__input" id="story-episode" min={0} />
+            </label>
+            <label className="field">
+              <span className="field__label">Pages</span>
+              <input type="number" name="pages" className="field__input" id="story-pages" min={0} />
+            </label>
+          </div>
+          <fieldset className="admin-fieldset">
+            <legend className="admin-fieldset__legend">SEO (optional)</legend>
+            <label className="field">
+              <span className="field__label">URL slug</span>
+              <div className="field__row">
+                <input
+                  type="text"
+                  name="slug"
+                  className="field__input"
+                  maxLength={120}
+                  id="story-slug"
+                  placeholder="my-series-episode-1"
+                  autoComplete="off"
+                />
+                <button type="button" className="btn btn--ghost btn--sm" id="story-slug-gen">
+                  From title
+                </button>
+              </div>
+              <span className="field__hint">
+                Story page becomes <code>/stories/&lt;slug&gt;</code>. Must be unique.
+              </span>
+            </label>
+            <label className="field">
+              <span className="field__label">Meta title</span>
+              <input type="text" name="meta_title" className="field__input" maxLength={200} id="story-meta-title" />
+            </label>
+            <label className="field">
+              <span className="field__label">Meta description</span>
+              <textarea
+                name="meta_description"
+                className="field__input field__input--area"
+                rows={2}
+                maxLength={500}
+                id="story-meta-desc"
+              />
+            </label>
+            <label className="field">
+              <span className="field__label">Tags (comma-separated)</span>
+              <input
+                type="text"
+                name="tags"
+                className="field__input"
+                maxLength={500}
+                id="story-tags"
+                placeholder="comic, milf, series"
+              />
+            </label>
+          </fieldset>
+          <label className="field">
+            <span className="field__label">Sort order</span>
+            <input type="number" name="sort_order" className="field__input" defaultValue={0} id="story-sort" />
+          </label>
+          <label className="field field--row">
+            <input type="checkbox" name="is_active" id="story-active" defaultChecked />
+            <span className="field__label field__label--inline">Visible on public site</span>
+          </label>
+          <div className="admin-dialog__actions">
+            <button type="button" className="btn btn--ghost" id="story-cancel">
               Cancel
             </button>
             <button type="submit" className="btn btn--primary" value="save">

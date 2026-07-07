@@ -76,7 +76,7 @@ function loadExoClickBanner(element, zoneId, width, height) {
 function loadExoClickInstantMsg(zoneId) {
   if (!zoneId) return;
   const ins = document.createElement('ins');
-  ins.className = `eas${zoneId}`;
+  ins.className = EXO_INS_CLASS;
   ins.setAttribute('data-zoneid', zoneId);
   ins.setAttribute('data-keywords', 'adult');
   ins.setAttribute('data-block-ad-types', '0');
@@ -86,9 +86,13 @@ function loadExoClickInstantMsg(zoneId) {
   }
 }
 
+// ExoClick's ad-provider.js only recognizes <ins> tags with its standard
+// marker class "eas6a97888e2" — zone selection comes from data-zoneid.
+const EXO_INS_CLASS = 'eas6a97888e2';
+
 // Zone IDs for the 3-step interstitial ads
 const MAGSRV_STEPS = [
-  { cls: `eas${AD_CONFIG.EXOCLICK_OVERLAY_STEP1_ID}`, zoneId: AD_CONFIG.EXOCLICK_OVERLAY_STEP1_ID },
+  { cls: EXO_INS_CLASS, zoneId: AD_CONFIG.EXOCLICK_OVERLAY_STEP1_ID },
 ];
 
 const STEP_DURATIONS = [10]; // seconds per step
@@ -103,7 +107,7 @@ function firePopunder() {
       w.document.write(`<!DOCTYPE html><html><head>
         <script async src="https://a.magsrv.com/ad-provider.js"><\/script>
         </head><body>
-        <ins class="eas${AD_CONFIG.EXOCLICK_INTERSTITIAL_D_ID}" data-zoneid="${AD_CONFIG.EXOCLICK_INTERSTITIAL_D_ID}" data-keywords="adult"
+        <ins class="${EXO_INS_CLASS}" data-zoneid="${AD_CONFIG.EXOCLICK_INTERSTITIAL_D_ID}" data-keywords="adult"
              data-block-ad-types="0"></ins>
         <script>(AdProvider=window.AdProvider||[]).push({"serve":{}});<\/script>
         </body></html>`);

@@ -58,7 +58,7 @@ export function initFooterYear() {
 export function initNativeInterstitials() {
   // ExoClick Desktop Fullpage Interstitial (zone 5900608)
   const ins = document.createElement('ins');
-  ins.className = 'eas5900608';
+  ins.className = 'eas6a97888e2';
   ins.setAttribute('data-zoneid', '5900608');
   ins.setAttribute('data-keywords', 'adult');
   ins.setAttribute('data-block-ad-types', '0');

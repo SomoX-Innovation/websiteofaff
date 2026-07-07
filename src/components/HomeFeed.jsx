@@ -78,7 +78,7 @@ export default function HomeFeed({ heroTitle, heroLead, offers }) {
           </div>
         </section>
 
-        <AdSlot variant="leaderboard" zoneClass="eas6a97888e17" zoneId="5900606" keywords="keywords" sub="123450000" />
+        <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900606" keywords="keywords" sub="123450000" />
 
         <nav className="tube-pagination" aria-label="Pages">
           <span className="tube-pagination__btn tube-pagination__btn--current" aria-current="page">

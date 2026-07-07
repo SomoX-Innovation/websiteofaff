@@ -114,7 +114,7 @@ export default async function StoryPage({ params }) {
       <TubeHeader searchInputId="tube-search-input-story" />
       <main id="main" className="tube-main-outer">
         <div className="wrap-tube">
-          <AdSlot variant="leaderboard" zoneClass="eas6a97888e6" zoneId="5900172" keywords="keywords" sub="123450000" />
+          <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900172" keywords="keywords" sub="123450000" />
         </div>
 
         <div className="wrap-tube stories-page" id="story-content">
@@ -156,7 +156,7 @@ export default async function StoryPage({ params }) {
               </div>
 
               <aside className="watch-sidebar" aria-labelledby="story-sidebar-title">
-                <AdSlot variant="sidebar" zoneClass="eas5900778" zoneId="5900778" />
+                <AdSlot variant="sidebar" zoneClass="eas6a97888e2" zoneId="5900778" />
 
                 <h2 id="story-sidebar-title" className="watch-sidebar__h">
                   {series ? `More from ${series}` : "More stories"}
@@ -186,7 +186,7 @@ export default async function StoryPage({ params }) {
                   <StoryCard key={s.id} story={s} />
                 ))}
               </div>
-              <AdSlot variant="leaderboard" zoneClass="eas5900782" zoneId="5900782" label="Recommended" />
+              <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900782" label="Recommended" />
             </section>
           ) : null}
         </div>

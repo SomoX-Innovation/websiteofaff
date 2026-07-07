@@ -167,6 +167,109 @@ function renderOffers(rows, supabase, refreshData) {
   }
 }
 
+function renderStories(rows, supabase, refreshData) {
+  const tbody = el("tbody-stories");
+  if (!tbody) return;
+  tbody.replaceChildren();
+
+  const sorted = [...(rows || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+
+  if (sorted.length === 0) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td colspan="7" class="admin-table__empty">No stories yet — click “Add story”.</td>`;
+    tbody.appendChild(tr);
+    return;
+  }
+
+  function clip(s, n) {
+    const t = String(s || "").trim();
+    if (!t) return "—";
+    return t.length > n ? `${t.slice(0, n - 1)}…` : t;
+  }
+
+  for (const s of sorted) {
+    const tr = document.createElement("tr");
+    if (!s.is_active) tr.classList.add("admin-table__row--muted");
+    tr.innerHTML = `
+      <td class="admin-table__cell-title"></td>
+      <td class="admin-table__mono"></td>
+      <td class="admin-table__num admin-table__num--ep"></td>
+      <td class="admin-table__mono admin-table__mono--pdf"></td>
+      <td class="admin-table__num"></td>
+      <td class="admin-table__bool"></td>
+      <td class="admin-table__actions"></td>
+    `;
+    tr.querySelector(".admin-table__cell-title").textContent = s.title;
+    tr.querySelector(".admin-table__mono").textContent = clip(s.series, 24);
+    tr.querySelector(".admin-table__num--ep").textContent = s.episode != null ? String(s.episode) : "—";
+    const pdfCell = tr.querySelector(".admin-table__mono--pdf");
+    const pdf = String(s.pdf_url || "").trim();
+    if (pdf) {
+      const a = document.createElement("a");
+      a.className = "admin-table__link";
+      a.href = pdf;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = clip(pdf, 36);
+      pdfCell.replaceChildren(a);
+    } else {
+      pdfCell.textContent = "—";
+    }
+    tr.querySelectorAll(".admin-table__num")[1].textContent = String(s.sort_order ?? 0);
+    tr.querySelector(".admin-table__bool").textContent = s.is_active ? "Yes" : "No";
+
+    const actions = tr.querySelector(".admin-table__actions");
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.className = "btn btn--ghost btn--sm";
+    editBtn.textContent = "Edit";
+    editBtn.addEventListener("click", () => openStoryDialog(s));
+
+    const delBtn = document.createElement("button");
+    delBtn.type = "button";
+    delBtn.className = "btn btn--ghost btn--sm admin-btn-danger";
+    delBtn.textContent = "Delete";
+    delBtn.addEventListener("click", async () => {
+      if (!confirm(`Delete story “${s.title}”?`)) return;
+      const { error } = await supabase.from("stories").delete().eq("id", s.id);
+      if (error) {
+        flash(error.message, false);
+        return;
+      }
+      flash("Story deleted.");
+      await refreshData();
+    });
+
+    actions.append(editBtn, delBtn);
+    tbody.appendChild(tr);
+  }
+}
+
+function openStoryDialog(row) {
+  const d = el("dlg-story");
+  if (!d) return;
+  el("dlg-story-title").textContent = row ? "Edit story" : "New story";
+  el("story-id").value = row?.id || "";
+  el("story-title-input").value = row?.title || "";
+  el("story-desc").value = row?.description || "";
+  el("story-pdf").value = row?.pdf_url || "";
+  el("story-cover").value = row?.cover_url || "";
+  el("story-series").value = row?.series || "";
+  el("story-episode").value = row?.episode != null ? String(row.episode) : "";
+  el("story-pages").value = row?.pages != null ? String(row.pages) : "";
+  el("story-slug").value = row?.slug || "";
+  el("story-meta-title").value = row?.meta_title || "";
+  el("story-meta-desc").value = row?.meta_description || "";
+  el("story-tags").value = row?.tags || "";
+  el("story-sort").value = row != null ? String(row.sort_order ?? 0) : "0";
+  el("story-active").checked = row ? Boolean(row.is_active) : true;
+  d.showModal();
+}
+
+function closeStoryDialog() {
+  el("dlg-story")?.close();
+}
+
 function renderContacts(rows) {
   const tbody = el("tbody-contacts");
   if (!tbody) return;
@@ -229,12 +332,18 @@ export function initAdminPage() {
   const { signal } = controller;
 
   async function refreshData(supabase) {
-    const [settingsRes, offersRes, contactsRes] = await Promise.all([
+    const [settingsRes, offersRes, storiesRes, contactsRes] = await Promise.all([
       supabase.from("site_settings").select("key, value"),
       supabase
         .from("offers")
         .select(
           "id, title, description, href, video_url, poster_url, slug, meta_title, meta_description, tags, category, sort_order, is_active"
+        )
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("stories")
+        .select(
+          "id, title, slug, description, series, episode, cover_url, pdf_url, pages, tags, category, meta_title, meta_description, sort_order, is_active"
         )
         .order("sort_order", { ascending: true }),
       supabase
@@ -249,6 +358,18 @@ export function initAdminPage() {
 
     if (offersRes.error) flash(offersRes.error.message, false);
     else renderOffers(offersRes.data, supabase, () => refreshData(supabase));
+
+    if (storiesRes.error) {
+      const tbody = el("tbody-stories");
+      const hint = storiesRes.error.message?.includes("stories")
+        ? `${storiesRes.error.message} — run supabase/migrations/009_stories.sql in the SQL Editor.`
+        : storiesRes.error.message;
+      if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="admin-table__empty"></td></tr>`;
+      const cell = tbody?.querySelector(".admin-table__empty");
+      if (cell) cell.textContent = hint;
+    } else {
+      renderStories(storiesRes.data, supabase, () => refreshData(supabase));
+    }
 
     if (contactsRes.error) {
       const tbody = el("tbody-contacts");
@@ -469,6 +590,64 @@ export function initAdminPage() {
       }
       closeOfferDialog();
       flash(id ? "Video updated." : "Video added.");
+      await refreshData(supabase);
+    },
+    { signal }
+  );
+
+  el("btn-story-new")?.addEventListener("click", () => openStoryDialog(null), { signal });
+
+  el("story-slug-gen")?.addEventListener(
+    "click",
+    () => {
+      const t = el("story-title-input")?.value || "";
+      el("story-slug").value = slugifyOfferText(t);
+    },
+    { signal }
+  );
+
+  el("story-cancel")?.addEventListener("click", () => closeStoryDialog(), { signal });
+
+  el("form-story")?.addEventListener(
+    "submit",
+    async (e) => {
+      e.preventDefault();
+      const id = el("story-id").value.trim();
+      const slugRaw = el("story-slug").value.trim().toLowerCase();
+      const slug = slugRaw ? slugifyOfferText(slugRaw) : null;
+      const episodeRaw = el("story-episode").value.trim();
+      const pagesRaw = el("story-pages").value.trim();
+      const payload = {
+        title: el("story-title-input").value.trim(),
+        description: el("story-desc").value.trim() || null,
+        pdf_url: el("story-pdf").value.trim(),
+        cover_url: el("story-cover").value.trim() || null,
+        series: el("story-series").value.trim() || null,
+        episode: episodeRaw ? Number(episodeRaw) : null,
+        pages: pagesRaw ? Number(pagesRaw) : null,
+        slug,
+        meta_title: el("story-meta-title").value.trim() || null,
+        meta_description: el("story-meta-desc").value.trim() || null,
+        tags: el("story-tags").value.trim() || null,
+        sort_order: Number(el("story-sort").value) || 0,
+        is_active: el("story-active").checked,
+      };
+
+      let error;
+      if (id) {
+        const res = await supabase.from("stories").update(payload).eq("id", id);
+        error = res.error;
+      } else {
+        const res = await supabase.from("stories").insert(payload);
+        error = res.error;
+      }
+
+      if (error) {
+        flash(error.message, false);
+        return;
+      }
+      closeStoryDialog();
+      flash(id ? "Story updated." : "Story added.");
       await refreshData(supabase);
     },
     { signal }

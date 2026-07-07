@@ -124,7 +124,7 @@ export default async function WatchPage({ params }) {
       <TubeHeader searchInputId="tube-search-input-watch" />
       <main id="main" className="tube-main-outer">
         <div className="wrap-tube">
-          <AdSlot variant="leaderboard" zoneClass="eas6a97888e6" zoneId="5900172" keywords="keywords" sub="123450000" />
+          <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900172" keywords="keywords" sub="123450000" />
         </div>
 
         <div className="wrap-tube watch-page" id="watch-content">
@@ -195,7 +195,7 @@ export default async function WatchPage({ params }) {
               </div>
 
               <aside className="watch-sidebar" aria-labelledby="watch-sidebar-title">
-                <AdSlot variant="sidebar" zoneClass="eas5900778" zoneId="5900778" />
+                <AdSlot variant="sidebar" zoneClass="eas6a97888e2" zoneId="5900778" />
 
                 <h2 id="watch-sidebar-title" className="watch-sidebar__h">
                   More videos
@@ -221,7 +221,7 @@ export default async function WatchPage({ params }) {
               ))}
             </div>
 
-            <AdSlot variant="leaderboard" zoneClass="eas5900782" zoneId="5900782" label="Recommended" />
+            <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900782" label="Recommended" />
           </section>
         </div>
       </main>
