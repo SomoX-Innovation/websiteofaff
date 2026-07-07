@@ -14,8 +14,9 @@ export const AD_CONFIG = {
   EXOCLICK_INTERSTITIAL_M_ID:    "5900714",  // Mobile Fullpage Interstitial
   EXOCLICK_OUTSTREAM_ID:         "5900780",  // Outstream Video
   EXOCLICK_RECOMMENDATION_ID:    "5900782",  // Recommendation Widget
-  EXOCLICK_VAST_ID:              "5899676",  // In-Stream Video (VAST)
-  MAGSRV_VAST_URL: "https://s.magsrv.com/v1/vast.php?idzone=5899676",
+  EXOCLICK_VAST_ID:              "5969012",  // In-Stream Video (VAST)
+  MAGSRV_VAST_URL: "https://s.magsrv.com/v1/vast.php?idz=5969012",
+  MAGSRV_INVIDEO_VAST_URL: "https://s.magsrv.com/v1/vast.php?idz=5969014", // In-Video banner (shown on pause)
 
   // Interstitial overlay steps
   EXOCLICK_OVERLAY_STEP1_ID: "5900204",
@@ -262,26 +263,53 @@ export function showPopupAdOverlay(duration = 8, onComplete = null) {
  * video overlay, then calls onComplete when done or skipped.
  */
 export async function showVastPreroll(onComplete) {
-  const vastUrl = `https://syndication.exoclick.com/splash.php?type=15&idzone=${AD_CONFIG.EXOCLICK_VAST_ID}`;
+  const vastUrl = AD_CONFIG.MAGSRV_VAST_URL;
   if (!vastUrl) { if (typeof onComplete === 'function') onComplete(); return; }
 
   let mediaUrl = null;
   let skipAfter = 5;
   let duration = 15;
+  const impressionUrls = [];
 
+  // VAST responses are often Wrappers pointing at another VAST document —
+  // follow VASTAdTagURI until we reach an InLine ad with a MediaFile.
   try {
-    const res = await fetch(vastUrl);
-    const xml = new DOMParser().parseFromString(await res.text(), 'text/xml');
-    const mediaFile = xml.querySelector('MediaFile');
-    if (mediaFile) mediaUrl = mediaFile.textContent.trim();
-    const dur = xml.querySelector('Duration');
-    if (dur) {
-      const parts = dur.textContent.trim().split(':');
-      duration = (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2] || 0);
+    let nextUrl = vastUrl;
+    for (let hop = 0; hop < 5 && nextUrl; hop++) {
+      const res = await fetch(nextUrl);
+      const xml = new DOMParser().parseFromString(await res.text(), 'text/xml');
+
+      xml.querySelectorAll('Impression').forEach((n) => {
+        const u = n.textContent.trim();
+        if (u) impressionUrls.push(u);
+      });
+
+      const mediaFile = xml.querySelector('MediaFile');
+      if (mediaFile) {
+        mediaUrl = mediaFile.textContent.trim();
+        const dur = xml.querySelector('Duration');
+        if (dur) {
+          const parts = dur.textContent.trim().split(':');
+          duration = (+parts[0]) * 3600 + (+parts[1]) * 60 + (+parts[2] || 0);
+        }
+        const skipOffset = xml.querySelector('Linear[skipoffset]')?.getAttribute('skipoffset');
+        if (skipOffset) {
+          const sp = skipOffset.split(':');
+          const s = sp.length === 3 ? (+sp[0]) * 3600 + (+sp[1]) * 60 + (+sp[2] || 0) : parseInt(skipOffset, 10);
+          if (Number.isFinite(s) && s > 0) skipAfter = s;
+        }
+        break;
+      }
+
+      const wrapperUri = xml.querySelector('VASTAdTagURI');
+      nextUrl = wrapperUri ? wrapperUri.textContent.trim() : null;
     }
   } catch (_) {}
 
   if (!mediaUrl) { if (typeof onComplete === 'function') onComplete(); return; }
+
+  // Fire impression trackers from the whole wrapper chain so the view is credited.
+  impressionUrls.forEach((u) => { try { new Image().src = u; } catch (_) {} });
 
   // Overlay
   const overlay = document.createElement('div');
@@ -353,6 +381,92 @@ export async function showVastPreroll(onComplete) {
     const s = rem % 60;
     countdown.textContent = `${m}:${String(s).padStart(2,'0')}`;
   });
+}
+
+/**
+ * In-Video banner on pause.
+ * When the user pauses the video, fetch the NonLinear VAST banner (image +
+ * click-through) and overlay it on the player. Removed on play/close.
+ */
+export function attachPauseBannerAd(videoEl, container) {
+  const vastUrl = AD_CONFIG.MAGSRV_INVIDEO_VAST_URL;
+  if (!vastUrl || !videoEl || !container) return;
+
+  let banner = null;
+  let loading = false;
+
+  const removeBanner = () => {
+    if (banner) { banner.remove(); banner = null; }
+  };
+
+  async function showBanner() {
+    if (banner || loading) return;
+    loading = true;
+
+    let imgUrl = null;
+    let clickUrl = null;
+    const impressions = [];
+    try {
+      const res = await fetch(vastUrl);
+      const xml = new DOMParser().parseFromString(await res.text(), 'text/xml');
+      imgUrl = xml.querySelector('NonLinear StaticResource')?.textContent.trim() || null;
+      clickUrl = xml.querySelector('NonLinearClickThrough')?.textContent.trim() || null;
+      xml.querySelectorAll('Impression').forEach((n) => {
+        const u = n.textContent.trim();
+        if (u) impressions.push(u);
+      });
+    } catch (_) {}
+    loading = false;
+
+    // The user may have resumed while the ad was loading — don't show it then.
+    if (!imgUrl || banner || !videoEl.paused || videoEl.ended || !videoEl.isConnected) return;
+
+    if (getComputedStyle(container).position === 'static') {
+      container.style.position = 'relative';
+    }
+
+    banner = document.createElement('div');
+    banner.style.cssText = `
+      position:absolute;left:50%;bottom:10%;transform:translateX(-50%);
+      z-index:20;background:rgba(0,0,0,0.65);padding:4px;border-radius:8px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.6);max-width:min(320px,86%);
+    `;
+
+    const closeBtn = document.createElement('button');
+    closeBtn.setAttribute('aria-label', 'Close ad');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = `
+      position:absolute;top:-12px;right:-12px;width:26px;height:26px;
+      border-radius:50%;border:none;background:#e50914;color:#fff;
+      font-size:13px;font-weight:700;cursor:pointer;line-height:26px;padding:0;
+    `;
+    closeBtn.addEventListener('click', removeBanner);
+
+    const link = document.createElement('a');
+    link.href = clickUrl || '#';
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer sponsored';
+
+    const img = document.createElement('img');
+    img.src = imgUrl;
+    img.alt = 'Advertisement';
+    img.style.cssText = 'display:block;max-width:100%;height:auto;border-radius:6px;';
+    img.addEventListener('error', removeBanner);
+
+    link.appendChild(img);
+    banner.append(closeBtn, link);
+    container.appendChild(banner);
+
+    impressions.forEach((u) => { try { new Image().src = u; } catch (_) {} });
+  }
+
+  videoEl.addEventListener('pause', () => {
+    // Skip pauses caused by seeking or the video finishing.
+    if (videoEl.ended || videoEl.seeking) return;
+    showBanner();
+  });
+  videoEl.addEventListener('play', removeBanner);
+  videoEl.addEventListener('ended', removeBanner);
 }
 
 /**

@@ -58,6 +58,9 @@ export default function TubeHeader({ searchInputId = "tube-search-input" }) {
           <Link className="tube-main-nav__btn tube-main-nav__btn--primary" href="/#tube-content">
             Videos
           </Link>
+          <Link className="tube-main-nav__btn tube-main-nav__btn--primary" href="/stories">
+            Stories
+          </Link>
         </nav>
         <div className="tube-tag-strip-wrap">
           <nav className="tube-tag-strip wrap-tube" id="tube-tags" aria-label="Popular tags">

@@ -94,6 +94,23 @@ export function parseVideoUrl(raw) {
   }
 }
 
+/** Pre-play state: show only the poster (or a black placeholder) without judging the video URL. */
+export function mountPosterPlaceholder(container, posterUrl) {
+  container.replaceChildren();
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:relative;width:100%;height:100%;display:block;background:#000;";
+  if (posterUrl) {
+    const img = document.createElement("img");
+    img.className = "video-card__poster-bg";
+    img.src = posterUrl;
+    img.alt = "";
+    img.setAttribute("aria-hidden", "true");
+    img.addEventListener("error", () => { img.style.display = "none"; });
+    wrap.appendChild(img);
+  }
+  container.appendChild(wrap);
+}
+
 export function mountVideoMedia(container, parsed, posterUrl) {
   container.replaceChildren();
   if (!parsed) {

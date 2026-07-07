@@ -2576,3 +2576,221 @@ a.watch-chip {
   resize: vertical;
 }
 
+
+/* ============================================================
+   PDF Stories / Comics section
+   ============================================================ */
+
+.stories-page {
+  padding: 18px 0 40px;
+}
+
+.stories-head {
+  margin: 6px 0 22px;
+}
+
+.stories-head__title {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  margin: 0 0 6px;
+}
+
+.stories-head__lead {
+  color: var(--muted);
+  margin: 0;
+  max-width: 70ch;
+}
+
+.stories-empty {
+  color: var(--muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.stories-series {
+  margin: 0 0 30px;
+}
+
+.stories-series__h {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+}
+
+.story-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.story-grid--sidebar {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.story-card {
+  background: #131316;
+  border: 1px solid #232329;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.story-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+
+.story-card__cover-link {
+  display: block;
+}
+
+.story-card__cover {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  background: #0d0d0f;
+}
+
+.story-card__cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.story-card__cover-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: var(--muted);
+  font-weight: 800;
+  font-size: 1.6rem;
+  letter-spacing: 3px;
+}
+
+.story-card__badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.story-card__pages {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.story-card__body {
+  padding: 10px 12px 12px;
+}
+
+.story-card__title-link {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.story-card__title {
+  font-size: 0.92rem;
+  line-height: 1.3;
+  margin: 0 0 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.story-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.story-card__series {
+  color: var(--accent-soft);
+  font-weight: 600;
+}
+
+/* --- Reader --- */
+
+.story-reader {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid #232329;
+}
+
+.story-reader--gate {
+  aspect-ratio: 3 / 4;
+  max-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.story-reader__cover {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.55;
+}
+
+.story-reader__read-btn {
+  position: relative;
+  z-index: 2;
+  font-size: 1.05rem;
+  padding: 14px 34px;
+}
+
+.story-reader__frame {
+  display: block;
+  width: 100%;
+  height: min(78vh, 900px);
+  border: 0;
+  background: #1a1a1d;
+}
+
+.story-reader__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+  background: #131316;
+}
+
+.story-reader__hint {
+  margin: 0;
+  padding: 0 12px 12px;
+  background: #131316;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+@media (max-width: 640px) {
+  .story-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+  .story-reader__frame {
+    height: 62vh;
+  }
+}

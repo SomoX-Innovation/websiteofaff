@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { mountVideoMedia, parseVideoUrl } from "../lib/video-embed.js";
+import { mountPosterPlaceholder, mountVideoMedia, parseVideoUrl } from "../lib/video-embed.js";
 import { resolveAutoPoster } from "../lib/video-poster.js";
-import { showPopupAdOverlay, showVastPreroll } from "../lib/ad-manager.js";
+import { attachPauseBannerAd, showPopupAdOverlay, showVastPreroll } from "../lib/ad-manager.js";
 
 /** Mounts the ad sequence (VAST preroll -> 3-step interstitial) then the real player, matching the original watch page flow. */
 export default function WatchPlayer({ videoUrl, posterUrl }) {
@@ -12,24 +12,11 @@ export default function WatchPlayer({ videoUrl, posterUrl }) {
 
   useEffect(() => {
     let cancelled = false;
-    const parsed = parseVideoUrl(videoUrl);
-
-    async function playSequence() {
-      const effectivePoster = (await resolveAutoPoster(String(videoUrl || ""), posterUrl)) || undefined;
-      if (cancelled || !frameRef.current) return;
-      showVastPreroll(() => {
-        if (cancelled) return;
-        showPopupAdOverlay(8, () => {
-          if (cancelled || !frameRef.current) return;
-          mountVideoMedia(frameRef.current, parsed, effectivePoster);
-        });
-      });
-    }
 
     // Show poster only until user clicks fake play button, matching original UX.
     resolveAutoPoster(String(videoUrl || ""), posterUrl).then((poster) => {
       if (cancelled || !frameRef.current) return;
-      mountVideoMedia(frameRef.current, null, poster || undefined);
+      mountPosterPlaceholder(frameRef.current, poster || undefined);
     });
 
     return () => {
@@ -46,7 +33,12 @@ export default function WatchPlayer({ videoUrl, posterUrl }) {
       if (cancelled) return;
       showVastPreroll(() => {
         showPopupAdOverlay(8, () => {
-          if (frameRef.current) mountVideoMedia(frameRef.current, parsed, effectivePoster || undefined);
+          if (!frameRef.current) return;
+          mountVideoMedia(frameRef.current, parsed, effectivePoster || undefined);
+          // In-video banner ad on pause (only possible for direct <video> files,
+          // not cross-origin iframes like YouTube/Drive).
+          const videoEl = frameRef.current.querySelector("video");
+          if (videoEl) attachPauseBannerAd(videoEl, frameRef.current);
         });
       });
     });
