@@ -48,6 +48,8 @@ export default function HomeFeed({ heroTitle, heroLead, offers }) {
           </div>
         </div>
 
+        <AdSlot variant="banner" zoneClass="eas6a97888e2" zoneId="5900210" keywords="keywords" sub="123450000" />
+
         <section className="videos" id="videos" aria-labelledby="videos-heading">
           <h2 id="videos-heading" className="visually-hidden">
             Video results
@@ -95,6 +97,8 @@ export default function HomeFeed({ heroTitle, heroLead, offers }) {
             Next
           </a>
         </nav>
+
+        <AdSlot variant="rect" zoneClass="eas6a97888e2" zoneId="5900208" keywords="keywords" sub="123450000" />
       </div>
     </div>
   );

@@ -185,6 +185,8 @@ export default async function WatchPage({ params }) {
                   ) : null}
                 </div>
 
+                <AdSlot variant="rect" zoneClass="eas6a97888e2" zoneId="5900204" keywords="keywords" sub="123450000" />
+
                 {description ? (
                   <p className="watch-desc" id="watch-desc">
                     {description}

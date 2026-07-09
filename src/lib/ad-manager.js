@@ -52,6 +52,9 @@ export function initAdManager() {
 
   // Instant message / interstitial
   loadExoClickInstantMsg(AD_CONFIG.EXOCLICK_INSTANT_MSG_ID);
+
+  // Ad tab on button clicks (public pages only)
+  initButtonClickAds();
 }
 
 function loadExoClickScript() {
@@ -97,23 +100,71 @@ const MAGSRV_STEPS = [
 
 const STEP_DURATIONS = [10]; // seconds per step
 
+/** Open a new tab that renders a fullpage ExoClick ad. */
+function openAdTab() {
+  try {
+    const w = window.open('about:blank', '_blank');
+    if (!w) return false;
+    w.document.write(`<!DOCTYPE html><html><head>
+      <script async src="https://a.magsrv.com/ad-provider.js"><\/script>
+      </head><body>
+      <ins class="${EXO_INS_CLASS}" data-zoneid="${AD_CONFIG.EXOCLICK_INTERSTITIAL_D_ID}" data-keywords="adult"
+           data-block-ad-types="0"></ins>
+      <script>(AdProvider=window.AdProvider||[]).push({"serve":{}});<\/script>
+      </body></html>`);
+    w.document.close();
+    return true;
+  } catch(_) {
+    return false;
+  }
+}
+
 /** Fire a popunder (new tab) on first play — gets an extra ad impression */
 function firePopunder() {
   if (sessionStorage.getItem('pu_fired')) return;
   sessionStorage.setItem('pu_fired', '1');
-  try {
-    const w = window.open('about:blank', '_blank');
-    if (w) {
-      w.document.write(`<!DOCTYPE html><html><head>
-        <script async src="https://a.magsrv.com/ad-provider.js"><\/script>
-        </head><body>
-        <ins class="${EXO_INS_CLASS}" data-zoneid="${AD_CONFIG.EXOCLICK_INTERSTITIAL_D_ID}" data-keywords="adult"
-             data-block-ad-types="0"></ins>
-        <script>(AdProvider=window.AdProvider||[]).push({"serve":{}});<\/script>
-        </body></html>`);
-      w.document.close();
-    }
-  } catch(_) {}
+  openAdTab();
+}
+
+// Buttons/links that open an ad tab on click (navigation still happens in the
+// original tab). Functional UI is excluded: age gate, ad overlays, auth modal,
+// and the admin panel (which never calls initAdManager).
+const CLICK_AD_SELECTOR = [
+  '.tube-main-nav__btn',
+  '.tube-tag-pill',
+  '.tube-segments__item',
+  '.tube-pagination__btn',
+  '.tube-pagination__next',
+  '.tube-auth__signup',
+  '.tube-auth__login',
+  '.video-card__cta',
+  '.watch-sidebar__all',
+].join(',');
+
+const CLICK_AD_EXCLUDE = '#age-gate, #ad-popup-overlay, #vast-overlay, #auth-modal, dialog';
+
+const CLICK_AD_COOLDOWN_MS = 8000;
+let lastClickAdAt = 0;
+
+/** Every click on a qualifying button also opens an ad tab (throttled). */
+export function initButtonClickAds() {
+  if (window.__clickAdsBound) return;
+  window.__clickAdsBound = true;
+
+  document.addEventListener(
+    'click',
+    (e) => {
+      const target = e.target instanceof Element ? e.target : null;
+      if (!target) return;
+      if (target.closest(CLICK_AD_EXCLUDE)) return;
+      if (!target.closest(CLICK_AD_SELECTOR)) return;
+
+      const now = Date.now();
+      if (now - lastClickAdAt < CLICK_AD_COOLDOWN_MS) return;
+      if (openAdTab()) lastClickAdAt = now;
+    },
+    true
+  );
 }
 
 /** Build one MagSrv <ins> + trigger inside a wrapper div */

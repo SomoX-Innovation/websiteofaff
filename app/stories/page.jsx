@@ -52,6 +52,8 @@ export default async function StoriesPage() {
             </p>
           </header>
 
+          <AdSlot variant="banner" zoneClass="eas6a97888e2" zoneId="5900210" keywords="keywords" sub="123450000" />
+
           {stories.length === 0 ? (
             <p className="stories-empty">No stories published yet — check back soon.</p>
           ) : (
