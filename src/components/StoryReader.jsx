@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { showPopupAdOverlay } from "../lib/ad-manager.js";
+import { renderPdfCover } from "../lib/pdf-poster.js";
 
 /**
  * PDF reader with the same ad gate as the video player:
@@ -10,6 +11,21 @@ import { showPopupAdOverlay } from "../lib/ad-manager.js";
 export default function StoryReader({ pdfUrl, coverUrl, title }) {
   const [reading, setReading] = useState(false);
   const [useAltViewer, setUseAltViewer] = useState(false);
+  const [autoCover, setAutoCover] = useState(null);
+
+  // No explicit cover: render the PDF's first page as the gate backdrop.
+  useEffect(() => {
+    if (coverUrl || !pdfUrl) return undefined;
+    let cancelled = false;
+    renderPdfCover(pdfUrl, 720).then((url) => {
+      if (!cancelled && url) setAutoCover(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pdfUrl, coverUrl]);
+
+  const effectiveCover = coverUrl || autoCover;
 
   function handleReadClick() {
     showPopupAdOverlay(8, () => setReading(true));
@@ -24,9 +40,9 @@ export default function StoryReader({ pdfUrl, coverUrl, title }) {
   if (!reading) {
     return (
       <div className="story-reader story-reader--gate">
-        {coverUrl ? (
+        {effectiveCover ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img className="story-reader__cover" src={coverUrl} alt="" aria-hidden="true" />
+          <img className="story-reader__cover" src={effectiveCover} alt="" aria-hidden="true" />
         ) : null}
         <button type="button" className="btn btn--primary story-reader__read-btn" onClick={handleReadClick}>
           📖 Read Now — Free

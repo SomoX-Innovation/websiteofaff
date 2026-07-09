@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { storyPageHref } from "../lib/story-data.js";
+import PdfCoverImage from "./PdfCoverImage.jsx";
 
 /** Grid card linking to a PDF story page (comic-style portrait cover). */
 export default function StoryCard({ story: s }) {
@@ -16,9 +17,11 @@ export default function StoryCard({ story: s }) {
             // eslint-disable-next-line @next/next/no-img-element
             <img className="story-card__cover-img" src={cover} alt="" loading="lazy" />
           ) : (
-            <div className="story-card__cover-fallback" aria-hidden="true">
-              PDF
-            </div>
+            <PdfCoverImage
+              pdfUrl={s.pdf_url}
+              imgClassName="story-card__cover-img"
+              placeholderClassName="story-card__cover-fallback"
+            />
           )}
           <span className="story-card__badge" aria-hidden="true">
             PDF
