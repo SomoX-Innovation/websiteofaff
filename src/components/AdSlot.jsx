@@ -1,9 +1,14 @@
-import AdZoneScript from "./AdZoneScript.jsx";
+"use client";
+
+import { useEffect } from "react";
 
 /**
  * Single consistent ad placement: a labeled card with a fixed-size, centered
  * ExoClick zone inside. `variant` controls sizing/aspect so every slot on the
  * site shares the same visual language instead of one-off inline styles.
+ *
+ * The serve trigger runs in an effect (not an inline <script>) so zones are
+ * requested on client-side navigations too, not only on hard page loads.
  *
  * variant: "leaderboard" (728x90) | "sidebar" (300x250) | "rect" (308x286) | "banner" (468x60)
  */
@@ -17,6 +22,12 @@ const VARIANTS = {
 export default function AdSlot({ variant = "sidebar", zoneClass, zoneId, keywords = "adult", sub, label = "Advertisement" }) {
   const v = VARIANTS[variant] || VARIANTS.sidebar;
 
+  useEffect(() => {
+    try {
+      (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+    } catch (_) {}
+  }, []);
+
   return (
     <div className={`ad-slot ad-slot--${variant}`} style={{ maxWidth: v.maxWidth, minHeight: v.minHeight }}>
       <span className="ad-slot__label">{label}</span>
@@ -28,7 +39,6 @@ export default function AdSlot({ variant = "sidebar", zoneClass, zoneId, keyword
           data-sub={sub}
           data-block-ad-types="0"
         />
-        <AdZoneScript />
       </div>
     </div>
   );
