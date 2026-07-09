@@ -159,9 +159,14 @@ export default function AdminApp() {
           <section className="admin-section">
             <div className="admin-section__head">
               <h2 className="admin-section__title">PDF stories (/stories)</h2>
-              <button type="button" className="btn btn--primary btn--sm" id="btn-story-new">
-                Add story
-              </button>
+              <div className="admin-section__head-actions">
+                <button type="button" className="btn btn--ghost btn--sm" id="btn-story-bulk">
+                  Bulk add episodes
+                </button>
+                <button type="button" className="btn btn--primary btn--sm" id="btn-story-new">
+                  Add story
+                </button>
+              </div>
             </div>
             <p className="admin-section__hint">
               Episodic PDF comics/stories. Paste full <strong>https://…</strong> URLs for the PDF and cover image.
@@ -469,6 +474,70 @@ export default function AdminApp() {
             </button>
             <button type="submit" className="btn btn--primary" value="save">
               Save
+            </button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="dlg-story-bulk" className="admin-dialog admin-dialog--wide">
+        <form id="form-story-bulk" className="admin-dialog__inner">
+          <h3 className="admin-dialog__title">Bulk add episodes</h3>
+          <label className="field">
+            <span className="field__label">Series name (required)</span>
+            <input
+              type="text"
+              name="series"
+              className="field__input"
+              required
+              maxLength={120}
+              id="bulk-series"
+              placeholder="e.g. My Comic Series"
+            />
+          </label>
+          <div className="field__row">
+            <label className="field">
+              <span className="field__label">Start at episode #</span>
+              <input type="number" name="start_episode" className="field__input" id="bulk-start-ep" defaultValue={1} min={0} />
+            </label>
+            <label className="field">
+              <span className="field__label">Tags (applied to all)</span>
+              <input
+                type="text"
+                name="tags"
+                className="field__input"
+                maxLength={500}
+                id="bulk-tags"
+                placeholder="comic, series"
+              />
+            </label>
+          </div>
+          <label className="field">
+            <span className="field__label">PDF links — one per line, in episode order</span>
+            <textarea
+              name="links"
+              className="field__input field__input--area"
+              rows={10}
+              required
+              id="bulk-links"
+              placeholder={"https://…/episode-1.pdf\nhttps://…/episode-2.pdf\nCustom Title | https://…/special.pdf"}
+            />
+            <span className="field__hint">
+              Each line becomes the next episode. Plain URL → title “Series — Episode N”. Use{" "}
+              <code>Title | URL</code> to set a custom title. Blank lines are skipped. Slugs are generated
+              automatically.
+            </span>
+          </label>
+          <label className="field field--row">
+            <input type="checkbox" name="is_active" id="bulk-active" defaultChecked />
+            <span className="field__label field__label--inline">Visible on public site</span>
+          </label>
+          <p id="bulk-preview" className="field__hint" />
+          <div className="admin-dialog__actions">
+            <button type="button" className="btn btn--ghost" id="bulk-cancel">
+              Cancel
+            </button>
+            <button type="submit" className="btn btn--primary" id="bulk-save">
+              Add all
             </button>
           </div>
         </form>

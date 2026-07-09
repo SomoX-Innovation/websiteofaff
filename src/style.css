@@ -2218,6 +2218,12 @@ a.watch-chip {
   margin-bottom: 0;
 }
 
+.admin-section__head-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .admin-section__hint {
   margin: -0.25rem 0 1rem;
   font-size: 0.85rem;

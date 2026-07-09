@@ -167,11 +167,69 @@ function renderOffers(rows, supabase, refreshData) {
   }
 }
 
+/** Latest loaded story rows — used by the bulk dialog to suggest the next episode number. */
+let lastStoryRows = [];
+
+/**
+ * Parse bulk episode lines: each non-empty line is either a plain URL or
+ * "Custom Title | URL". Returns { items, badLines }.
+ */
+function parseBulkStoryLines(text) {
+  const items = [];
+  const badLines = [];
+  const lines = String(text || "").split(/\r?\n/);
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    let title = null;
+    let url = line;
+    const sep = line.lastIndexOf("|");
+    if (sep !== -1) {
+      title = line.slice(0, sep).trim() || null;
+      url = line.slice(sep + 1).trim();
+    }
+    if (/^https?:\/\/\S+$/i.test(url)) {
+      items.push({ title, url });
+    } else {
+      badLines.push(line);
+    }
+  }
+  return { items, badLines };
+}
+
+function nextEpisodeForSeries(series) {
+  const wanted = String(series || "").trim().toLowerCase();
+  if (!wanted) return 1;
+  let max = 0;
+  for (const s of lastStoryRows) {
+    if (String(s.series || "").trim().toLowerCase() !== wanted) continue;
+    const ep = Number(s.episode);
+    if (Number.isFinite(ep) && ep > max) max = ep;
+  }
+  return max + 1;
+}
+
+function updateBulkPreview() {
+  const box = el("bulk-preview");
+  if (!box) return;
+  const { items, badLines } = parseBulkStoryLines(el("bulk-links")?.value);
+  const start = Number(el("bulk-start-ep")?.value) || 1;
+  const parts = [];
+  if (items.length) {
+    parts.push(`Will add ${items.length} episode${items.length === 1 ? "" : "s"} (Ep ${start}–${start + items.length - 1}).`);
+  }
+  if (badLines.length) {
+    parts.push(`⚠ ${badLines.length} line${badLines.length === 1 ? "" : "s"} skipped (not a valid URL).`);
+  }
+  box.textContent = parts.join(" ");
+}
+
 function renderStories(rows, supabase, refreshData) {
   const tbody = el("tbody-stories");
   if (!tbody) return;
   tbody.replaceChildren();
 
+  lastStoryRows = rows || [];
   const sorted = [...(rows || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   if (sorted.length === 0) {
@@ -648,6 +706,98 @@ export function initAdminPage() {
       }
       closeStoryDialog();
       flash(id ? "Story updated." : "Story added.");
+      await refreshData(supabase);
+    },
+    { signal }
+  );
+
+  el("btn-story-bulk")?.addEventListener(
+    "click",
+    () => {
+      const d = el("dlg-story-bulk");
+      if (!d) return;
+      el("form-story-bulk")?.reset();
+      el("bulk-start-ep").value = "1";
+      const preview = el("bulk-preview");
+      if (preview) preview.textContent = "";
+      d.showModal();
+    },
+    { signal }
+  );
+
+  el("bulk-cancel")?.addEventListener("click", () => el("dlg-story-bulk")?.close(), { signal });
+
+  // Suggest the next episode number once a known series name is typed.
+  el("bulk-series")?.addEventListener(
+    "change",
+    () => {
+      el("bulk-start-ep").value = String(nextEpisodeForSeries(el("bulk-series").value));
+      updateBulkPreview();
+    },
+    { signal }
+  );
+
+  el("bulk-links")?.addEventListener("input", updateBulkPreview, { signal });
+  el("bulk-start-ep")?.addEventListener("input", updateBulkPreview, { signal });
+
+  el("form-story-bulk")?.addEventListener(
+    "submit",
+    async (e) => {
+      e.preventDefault();
+      const series = el("bulk-series").value.trim();
+      const tags = el("bulk-tags").value.trim() || null;
+      const isActive = el("bulk-active").checked;
+      const start = Number(el("bulk-start-ep").value) || 1;
+      const { items, badLines } = parseBulkStoryLines(el("bulk-links").value);
+
+      if (!series) {
+        flash("Series name is required for bulk add.", false);
+        return;
+      }
+      if (items.length === 0) {
+        flash("No valid PDF URLs found — paste one https:// link per line.", false);
+        return;
+      }
+
+      const stamp = Date.now().toString(36);
+      const rows = items.map((item, i) => {
+        const episode = start + i;
+        const title = item.title || `${series} — Episode ${episode}`;
+        // Suffix keeps slugs unique even when re-adding the same episode numbers.
+        const slug = slugifyOfferText(`${series}-episode-${episode}`) || `${stamp}-${episode}`;
+        return {
+          title,
+          series,
+          episode,
+          pdf_url: item.url,
+          slug,
+          tags,
+          sort_order: episode,
+          is_active: isActive,
+        };
+      });
+
+      const saveBtn = el("bulk-save");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Adding…";
+
+      const { error } = await supabase.from("stories").insert(rows);
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Add all";
+
+      if (error) {
+        let msg = error.message;
+        if (msg?.includes("duplicate key") && msg?.includes("slug")) {
+          msg = `${msg} — some of these episodes already exist for “${series}”. Adjust “Start at episode #”.`;
+        }
+        flash(msg, false);
+        return;
+      }
+
+      el("dlg-story-bulk")?.close();
+      const skipped = badLines.length ? ` (${badLines.length} invalid line${badLines.length === 1 ? "" : "s"} skipped)` : "";
+      flash(`Added ${rows.length} episode${rows.length === 1 ? "" : "s"} to “${series}”${skipped}.`);
       await refreshData(supabase);
     },
     { signal }
