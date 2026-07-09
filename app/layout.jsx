@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import "../src/style.css";
 
 export const metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="tube">
         {children}
+        <Analytics />
         <Script async src="https://a.magsrv.com/ad-provider.js" strategy="afterInteractive" />
         <Script async src="https://a.pemsrv.com/ad-provider.js" strategy="afterInteractive" />
         <Script id="pn-config" strategy="afterInteractive">
