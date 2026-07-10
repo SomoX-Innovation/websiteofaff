@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { fetchPublicCatalog } from "../../src/lib/site-data.js";
 import { fetchStories } from "../../src/lib/story-data.js";
 import AgeGate from "../../src/components/AgeGate.jsx";
@@ -57,15 +58,20 @@ export default async function StoriesPage() {
           {stories.length === 0 ? (
             <p className="stories-empty">No stories published yet — check back soon.</p>
           ) : (
-            [...bySeries.entries()].map(([series, items]) => (
-              <section key={series} className="stories-series" aria-label={series}>
-                <h2 className="stories-series__h">{series}</h2>
-                <div className="story-grid" role="list">
-                  {items.map((s) => (
-                    <StoryCard key={s.id} story={s} />
-                  ))}
-                </div>
-              </section>
+            [...bySeries.entries()].map(([series, items], i) => (
+              <Fragment key={series}>
+                {i > 0 && i % 3 === 0 ? (
+                  <AdSlot variant="rect" zoneClass="eas6a97888e2" zoneId="5900208" keywords="keywords" sub="123450000" />
+                ) : null}
+                <section className="stories-series" aria-label={series}>
+                  <h2 className="stories-series__h">{series}</h2>
+                  <div className="story-grid" role="list">
+                    {items.map((s) => (
+                      <StoryCard key={s.id} story={s} />
+                    ))}
+                  </div>
+                </section>
+              </Fragment>
             ))
           )}
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import VideoCard from "./VideoCard.jsx";
 import TubeSidebar from "./TubeSidebar.jsx";
 import AdSlot from "./AdSlot.jsx";
@@ -75,7 +75,16 @@ export default function HomeFeed({ heroTitle, heroLead, offers }) {
                 {offers.length === 0 ? "No videos to show right now. Check back soon." : "No matches."}
               </p>
             ) : (
-              visible.map((o) => <VideoCard key={o.id} offer={o} />)
+              visible.map((o, i) => (
+                <Fragment key={o.id}>
+                  <VideoCard offer={o} />
+                  {i > 0 && (i + 1) % 8 === 0 ? (
+                    <div className="video-grid__ad-tile" role="listitem">
+                      <AdSlot variant="sidebar" zoneClass="eas6a97888e2" zoneId="5900204" keywords="keywords" sub="123450000" />
+                    </div>
+                  ) : null}
+                </Fragment>
+              ))
             )}
           </div>
         </section>
