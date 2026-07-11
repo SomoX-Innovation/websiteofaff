@@ -104,8 +104,24 @@ export default async function StoryPage({ params }) {
   const description = String(current.description || "").trim();
   const crumbTitle = current.title.length > 48 ? `${current.title.slice(0, 45)}…` : current.title;
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://wellwetx.com/" },
+      { "@type": "ListItem", position: 2, name: "Stories", item: "https://wellwetx.com/stories" },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: current.title,
+        item: `https://wellwetx.com${storyPageHref(current)}`,
+      },
+    ],
+  };
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <PageChrome />
       <AgeGate />
       <a className="skip-link" href="#story-content">

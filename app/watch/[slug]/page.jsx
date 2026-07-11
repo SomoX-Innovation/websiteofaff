@@ -106,11 +106,16 @@ export default async function WatchPage({ params }) {
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name: "Watch Videos",
-    url: `https://wellwetx.com${watchPageHref(current)}`,
-    description: "Stream premium videos.",
-    areaServed: ["US", "GB", "CA", "IN", "LK"],
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://wellwetx.com/" },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: current.title,
+        item: `https://wellwetx.com${watchPageHref(current)}`,
+      },
+    ],
   };
 
   return (
