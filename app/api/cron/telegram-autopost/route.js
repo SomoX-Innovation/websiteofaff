@@ -56,9 +56,16 @@ export async function GET(request) {
     return Response.json({ ok: false, reason: "Telegram bot not configured" }, { status: 200 });
   }
 
-  const channelId = process.env.TELEGRAM_ANNOUNCE_CHAT_ID;
-  if (!channelId) {
-    return Response.json({ ok: false, reason: "TELEGRAM_ANNOUNCE_CHAT_ID not configured" }, { status: 200 });
+  // Separate channels per content type, falling back to the single legacy
+  // channel var if only one is configured (videos and stories both post
+  // there, same as before this split existed).
+  const videosChannelId = process.env.TELEGRAM_ANNOUNCE_CHAT_ID_VIDEOS || process.env.TELEGRAM_ANNOUNCE_CHAT_ID;
+  const storiesChannelId = process.env.TELEGRAM_ANNOUNCE_CHAT_ID_STORIES || process.env.TELEGRAM_ANNOUNCE_CHAT_ID;
+  if (!videosChannelId && !storiesChannelId) {
+    return Response.json(
+      { ok: false, reason: "No announce channel configured (set TELEGRAM_ANNOUNCE_CHAT_ID_VIDEOS / _STORIES or TELEGRAM_ANNOUNCE_CHAT_ID)" },
+      { status: 200 }
+    );
   }
 
   if (!isSupabaseConfigured()) {
@@ -78,8 +85,8 @@ export async function GET(request) {
   const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 1000) : 5;
 
   const [offers, stories] = await Promise.all([
-    unpostedItems(supabase, "offers", "offer", limit),
-    unpostedItems(supabase, "stories", "story", limit),
+    videosChannelId ? unpostedItems(supabase, "offers", "offer", limit) : [],
+    storiesChannelId ? unpostedItems(supabase, "stories", "story", limit) : [],
   ]);
 
   // Telegram allows roughly 1 message/sec to the same chat — pace posts so a
@@ -87,13 +94,13 @@ export async function GET(request) {
   let posted = 0;
   for (const offer of offers) {
     if (posted > 0) await sleep(1100);
-    await broadcast(bot, itemCard(offer, "offer"), channelId);
+    await broadcast(bot, itemCard(offer, "offer"), videosChannelId);
     await markPosted(supabase, "offer", offer.id);
     posted += 1;
   }
   for (const story of stories) {
     if (posted > 0) await sleep(1100);
-    await broadcast(bot, itemCard(story, "story"), channelId);
+    await broadcast(bot, itemCard(story, "story"), storiesChannelId);
     await markPosted(supabase, "story", story.id);
     posted += 1;
   }
