@@ -437,7 +437,7 @@ export function initAdminPage() {
     if (storiesRes.error) {
       const tbody = el("tbody-stories");
       const hint = storiesRes.error.message?.includes("stories")
-        ? `${storiesRes.error.message} — run supabase/migrations/009_stories.sql in the SQL Editor.`
+        ? `${storiesRes.error.message} — run supabase/schema_complete.sql in the SQL Editor.`
         : storiesRes.error.message;
       if (tbody) tbody.innerHTML = `<tr><td colspan="7" class="admin-table__empty"></td></tr>`;
       const cell = tbody?.querySelector(".admin-table__empty");

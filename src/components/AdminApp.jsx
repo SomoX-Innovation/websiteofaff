@@ -142,7 +142,7 @@ export default function AdminApp() {
             <p className="admin-section__hint">
               The homepage only shows rows that are <strong>Active</strong> and have a <strong>Video URL</strong>.
               Use <strong>Slug</strong> and meta fields for cleaner watch URLs and better search snippets (run{" "}
-              <code>supabase/migrations/005_offer_seo.sql</code> if those columns are missing).
+              <code>supabase/schema_complete.sql</code> if those columns are missing).
             </p>
             <div className="admin-table-wrap">
               <table className="admin-table" id="table-offers">
@@ -178,7 +178,7 @@ export default function AdminApp() {
             <p className="admin-section__hint">
               Episodic PDF comics/stories. Paste full <strong>https://…</strong> URLs for the PDF and cover image.
               Rows need <strong>Active</strong> + a <strong>PDF URL</strong> to appear on <code>/stories</code> (run{" "}
-              <code>supabase/migrations/009_stories.sql</code> if the table is missing).
+              <code>supabase/schema_complete.sql</code> if the table is missing).
             </p>
             <div className="admin-table-wrap">
               <table className="admin-table" id="table-stories">
