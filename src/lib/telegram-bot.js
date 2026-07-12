@@ -48,7 +48,7 @@ function itemCard(item, kind) {
     title: String(item.title || "").trim() || (kind === "story" ? "New story" : "New video"),
     // imageUrl is a top-level Card option, not a nested Image() child.
     ...(poster ? { imageUrl: poster } : {}),
-    children: [CardText(teaserFor(item)), Actions([LinkButton({ url: linkFor(item, kind), children: linkLabel })])],
+    children: [CardText(teaserFor(item)), Actions([LinkButton({ url: linkFor(item, kind), label: linkLabel })])],
   });
 }
 
@@ -122,11 +122,11 @@ function videosCard(page, { items, hasMore, total }) {
   const start = page * VIDEOS_PAGE_SIZE + 1;
   const end = page * VIDEOS_PAGE_SIZE + items.length;
   const buttons = items.map((o) =>
-    LinkButton({ url: linkFor(o, "offer"), children: `▶ ${o.title.slice(0, 28)}` })
+    LinkButton({ url: linkFor(o, "offer"), label: `▶ ${o.title.slice(0, 28)}` })
   );
   const navButtons = [];
-  if (page > 0) navButtons.push(Button({ id: "videos_page", value: String(page - 1), children: "◀ Previous" }));
-  if (hasMore) navButtons.push(Button({ id: "videos_page", value: String(page + 1), children: "Next ▶" }));
+  if (page > 0) navButtons.push(Button({ id: "videos_page", value: String(page - 1), label: "◀ Previous" }));
+  if (hasMore) navButtons.push(Button({ id: "videos_page", value: String(page + 1), label: "Next ▶" }));
 
   return Card({
     title: `Videos on ${siteName()}`,
