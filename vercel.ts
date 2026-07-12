@@ -4,6 +4,7 @@ export const config: VercelConfig = {
   framework: "nextjs",
   crons: [
     // Checks for new offers/stories and posts SFW teasers to Telegram.
-    { path: "/api/cron/telegram-autopost", schedule: "0 */6 * * *" },
+    // Hobby plan allows at most one run/day — bump to hourly if/when upgrading to Pro.
+    { path: "/api/cron/telegram-autopost", schedule: "0 12 * * *" },
   ],
 };

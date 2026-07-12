@@ -49,6 +49,10 @@ export async function GET(request) {
   }
 
   const { bot, itemCard } = await import("../../../../src/lib/telegram-bot.js");
+  // Chat normally initializes lazily on the first webhook call; cron runs
+  // never hit a webhook, so the adapter (bot user id, etc.) would otherwise
+  // stay unset and throw when bot.channel(...).post() tries to use it.
+  await bot.initialize();
   const supabase = getSupabase();
 
   // Default 5/run for the recurring cron; pass ?limit=1000 (capped) for a
