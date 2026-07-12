@@ -1,4 +1,4 @@
-import { Chat, Card, CardText, Actions, Button, LinkButton, Image } from "chat";
+import { Chat, Card, CardText, Actions, Button, LinkButton } from "chat";
 import { createTelegramAdapter } from "@chat-adapter/telegram";
 import { createPostgresState } from "@chat-adapter/state-pg";
 import { createMemoryState } from "@chat-adapter/state-memory";
@@ -46,11 +46,9 @@ function itemCard(item, kind) {
   const linkLabel = kind === "story" ? `Read on ${siteName()}` : `Watch on ${siteName()}`;
   return Card({
     title: String(item.title || "").trim() || (kind === "story" ? "New story" : "New video"),
-    children: [
-      ...(poster ? [Image({ url: poster, alt: item.title || "" })] : []),
-      CardText(teaserFor(item)),
-      Actions([LinkButton({ url: linkFor(item, kind), children: linkLabel })]),
-    ],
+    // imageUrl is a top-level Card option, not a nested Image() child.
+    ...(poster ? { imageUrl: poster } : {}),
+    children: [CardText(teaserFor(item)), Actions([LinkButton({ url: linkFor(item, kind), children: linkLabel })])],
   });
 }
 
