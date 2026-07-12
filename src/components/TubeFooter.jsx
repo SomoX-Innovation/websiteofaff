@@ -27,7 +27,7 @@ export default function TubeFooter() {
         </div>
 
         <div className="wrap-tube">
-          <AdSlot variant="banner" zoneClass="eas6a97888e2" zoneId="5900210" keywords="keywords" sub="123450000" />
+          <AdSlot variant="banner" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
         </div>
 
         <div className="wrap-tube site-footer__bottom">

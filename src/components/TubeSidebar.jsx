@@ -70,7 +70,7 @@ export default function TubeSidebar({ onCategoryPick }) {
         </ul>
       </div>
 
-      <AdSlot variant="sidebar" zoneClass="eas6a97888e2" zoneId="5900204" keywords="keywords" sub="123450000" />
+      <AdSlot variant="sidebar" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
     </aside>
   );
 }

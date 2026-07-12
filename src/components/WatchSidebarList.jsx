@@ -8,9 +8,8 @@ import { fillMiniPosterSlot } from "../lib/video-poster.js";
 function MiniItem({ offer: o }) {
   const thumbRef = useRef(null);
   useEffect(() => {
-    if (thumbRef.current) {
-      fillMiniPosterSlot(thumbRef.current, String(o.video_url || ""), String(o.poster_url || "").trim());
-    }
+    if (!thumbRef.current) return undefined;
+    return fillMiniPosterSlot(thumbRef.current, String(o.video_url || ""), String(o.poster_url || "").trim());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [o.id]);
 

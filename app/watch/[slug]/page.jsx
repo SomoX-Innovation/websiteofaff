@@ -90,9 +90,18 @@ export default async function WatchPage({ params }) {
     );
   }
 
-  const others = offers.filter((o) => String(o.id) !== String(current.id));
-  const sidebarItems = others.slice(0, 10);
-  const gridItems = others.slice(0, 12);
+  const currentSeries = String(current.series || "").trim();
+  const rest = offers.filter((o) => String(o.id) !== String(current.id));
+  const sameSeries = currentSeries
+    ? rest
+        .filter((o) => String(o.series || "").trim() === currentSeries)
+        .sort((a, b) => (a.episode ?? 0) - (b.episode ?? 0))
+    : [];
+  const unrelated = rest.filter((o) => String(o.series || "").trim() !== currentSeries);
+  // Sidebar still leads with series episodes (capped) so they're visible without
+  // scrolling; the dedicated section below shows every episode, uncapped.
+  const sidebarItems = [...sameSeries, ...unrelated].slice(0, 10);
+  const gridItems = unrelated.slice(0, 12);
   const views = pseudoViewsFromId(current.id).toLocaleString();
   const cat = String(current.category || "").trim();
   const tags = String(current.tags || "")
@@ -129,7 +138,7 @@ export default async function WatchPage({ params }) {
       <TubeHeader searchInputId="tube-search-input-watch" />
       <main id="main" className="tube-main-outer">
         <div className="wrap-tube">
-          <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900172" keywords="keywords" sub="123450000" />
+          <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
         </div>
 
         <div className="wrap-tube watch-page" id="watch-content">
@@ -190,7 +199,7 @@ export default async function WatchPage({ params }) {
                   ) : null}
                 </div>
 
-                <AdSlot variant="rect" zoneClass="eas6a97888e2" zoneId="5900204" keywords="keywords" sub="123450000" />
+                <AdSlot variant="rect" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
 
                 {description ? (
                   <p className="watch-desc" id="watch-desc">
@@ -198,18 +207,18 @@ export default async function WatchPage({ params }) {
                   </p>
                 ) : null}
 
-                <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900210" keywords="keywords" sub="123450000" />
+                <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
               </div>
 
               <aside className="watch-sidebar" aria-labelledby="watch-sidebar-title">
-                <AdSlot variant="sidebar" zoneClass="eas6a97888e2" zoneId="5900778" />
+                <AdSlot variant="sidebar" zoneClass="eas6a97888e35" zoneId="5972168" />
 
                 <h2 id="watch-sidebar-title" className="watch-sidebar__h">
                   More videos
                 </h2>
                 <WatchSidebarList items={sidebarItems} />
 
-                <AdSlot variant="rect" zoneClass="eas6a97888e2" zoneId="5900208" keywords="keywords" sub="123450000" />
+                <AdSlot variant="rect" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
 
                 <a href="/" className="watch-sidebar__all">
                   Browse all videos
@@ -217,6 +226,19 @@ export default async function WatchPage({ params }) {
               </aside>
             </div>
           </section>
+
+          {currentSeries && sameSeries.length ? (
+            <section className="watch-related-block" aria-labelledby="watch-series-heading">
+              <h2 id="watch-series-heading" className="watch-related-block__h">
+                More from “{currentSeries}”
+              </h2>
+              <div className="video-grid video-grid--tube watch-related-block__grid" role="list">
+                {sameSeries.map((o) => (
+                  <VideoCard key={o.id} offer={o} />
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           <section className="watch-related-block" aria-labelledby="watch-related-heading">
             <h2 id="watch-related-heading" className="watch-related-block__h">
@@ -228,7 +250,7 @@ export default async function WatchPage({ params }) {
               ))}
             </div>
 
-            <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900782" label="Recommended" />
+            <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" label="Recommended" />
           </section>
         </div>
       </main>

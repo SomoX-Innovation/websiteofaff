@@ -42,7 +42,7 @@ export default async function StoriesPage() {
       <TubeHeader searchInputId="tube-search-input-stories" />
       <main id="main" className="tube-main-outer">
         <div className="wrap-tube">
-          <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900172" keywords="keywords" sub="123450000" />
+          <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
         </div>
 
         <div className="wrap-tube stories-page" id="stories-content">
@@ -53,7 +53,7 @@ export default async function StoriesPage() {
             </p>
           </header>
 
-          <AdSlot variant="banner" zoneClass="eas6a97888e2" zoneId="5900210" keywords="keywords" sub="123450000" />
+          <AdSlot variant="banner" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
 
           {stories.length === 0 ? (
             <p className="stories-empty">No stories published yet — check back soon.</p>
@@ -61,7 +61,7 @@ export default async function StoriesPage() {
             [...bySeries.entries()].map(([series, items], i) => (
               <Fragment key={series}>
                 {i > 0 && i % 3 === 0 ? (
-                  <AdSlot variant="rect" zoneClass="eas6a97888e2" zoneId="5900208" keywords="keywords" sub="123450000" />
+                  <AdSlot variant="rect" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
                 ) : null}
                 <section className="stories-series" aria-label={series}>
                   <h2 className="stories-series__h">{series}</h2>
@@ -75,7 +75,7 @@ export default async function StoriesPage() {
             ))
           )}
 
-          <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900782" label="Recommended" />
+          <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" label="Recommended" />
         </div>
       </main>
       <TubeFooter />

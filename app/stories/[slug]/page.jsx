@@ -130,7 +130,7 @@ export default async function StoryPage({ params }) {
       <TubeHeader searchInputId="tube-search-input-story" />
       <main id="main" className="tube-main-outer">
         <div className="wrap-tube">
-          <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900172" keywords="keywords" sub="123450000" />
+          <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
         </div>
 
         <div className="wrap-tube stories-page" id="story-content">
@@ -168,11 +168,11 @@ export default async function StoryPage({ params }) {
 
                 {description ? <p className="watch-desc">{description}</p> : null}
 
-                <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900210" keywords="keywords" sub="123450000" />
+                <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
               </div>
 
               <aside className="watch-sidebar" aria-labelledby="story-sidebar-title">
-                <AdSlot variant="sidebar" zoneClass="eas6a97888e2" zoneId="5900778" />
+                <AdSlot variant="sidebar" zoneClass="eas6a97888e35" zoneId="5972168" />
 
                 <h2 id="story-sidebar-title" className="watch-sidebar__h">
                   {series ? `More from ${series}` : "More stories"}
@@ -183,7 +183,7 @@ export default async function StoryPage({ params }) {
                   ))}
                 </div>
 
-                <AdSlot variant="rect" zoneClass="eas6a97888e2" zoneId="5900208" keywords="keywords" sub="123450000" />
+                <AdSlot variant="rect" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
 
                 <a href="/stories" className="watch-sidebar__all">
                   Browse all stories
@@ -202,7 +202,7 @@ export default async function StoryPage({ params }) {
                   <StoryCard key={s.id} story={s} />
                 ))}
               </div>
-              <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900782" label="Recommended" />
+              <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" label="Recommended" />
             </section>
           ) : null}
         </div>

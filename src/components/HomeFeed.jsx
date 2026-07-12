@@ -48,7 +48,7 @@ export default function HomeFeed({ heroTitle, heroLead, offers }) {
           </div>
         </div>
 
-        <AdSlot variant="banner" zoneClass="eas6a97888e2" zoneId="5900210" keywords="keywords" sub="123450000" />
+        <AdSlot variant="banner" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
 
         <section className="videos" id="videos" aria-labelledby="videos-heading">
           <h2 id="videos-heading" className="visually-hidden">
@@ -80,7 +80,7 @@ export default function HomeFeed({ heroTitle, heroLead, offers }) {
                   <VideoCard offer={o} />
                   {i > 0 && (i + 1) % 8 === 0 ? (
                     <div className="video-grid__ad-tile" role="listitem">
-                      <AdSlot variant="sidebar" zoneClass="eas6a97888e2" zoneId="5900204" keywords="keywords" sub="123450000" />
+                      <AdSlot variant="sidebar" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
                     </div>
                   ) : null}
                 </Fragment>
@@ -89,7 +89,7 @@ export default function HomeFeed({ heroTitle, heroLead, offers }) {
           </div>
         </section>
 
-        <AdSlot variant="leaderboard" zoneClass="eas6a97888e2" zoneId="5900606" keywords="keywords" sub="123450000" />
+        <AdSlot variant="leaderboard" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
 
         <nav className="tube-pagination" aria-label="Pages">
           <span className="tube-pagination__btn tube-pagination__btn--current" aria-current="page">
@@ -107,7 +107,7 @@ export default function HomeFeed({ heroTitle, heroLead, offers }) {
           </a>
         </nav>
 
-        <AdSlot variant="rect" zoneClass="eas6a97888e2" zoneId="5900208" keywords="keywords" sub="123450000" />
+        <AdSlot variant="rect" zoneClass="eas6a97888e35" zoneId="5972168" keywords="keywords" sub="123450000" />
       </div>
     </div>
   );

@@ -6,10 +6,7 @@ import { watchPageHref } from "../lib/site-data.js";
 import { fillPosterSlot } from "../lib/video-poster.js";
 
 function showAdPopup(watchHref) {
-  if (document.getElementById("fake-play-popup")) {
-    window.location.href = watchHref;
-    return;
-  }
+  if (document.getElementById("fake-play-popup")) return;
 
   const overlay = document.createElement("div");
   overlay.id = "fake-play-popup";
@@ -47,10 +44,6 @@ function showAdPopup(watchHref) {
   ins.setAttribute("data-ex_av", "name");
   adWrap.appendChild(ins);
 
-  const trigger = document.createElement("script");
-  trigger.textContent = "(AdProvider = window.AdProvider || []).push({'serve': {}});";
-  adWrap.appendChild(trigger);
-
   const skipBtn = document.createElement("button");
   skipBtn.textContent = "Watch Video ▶";
   skipBtn.style.cssText = `
@@ -58,11 +51,20 @@ function showAdPopup(watchHref) {
     font-size: 16px; font-weight: 700; border-radius: 7px; cursor: pointer;
     display: none; width: 100%; margin-top: 4px;
   `;
-  skipBtn.onclick = () => overlay.remove();
+  skipBtn.onclick = () => {
+    overlay.remove();
+    window.location.href = watchHref;
+  };
 
   card.append(timer, msg, adWrap, skipBtn);
   overlay.appendChild(card);
   document.body.appendChild(overlay);
+
+  // Ad zone must be in the live DOM before requesting a serve — injecting a
+  // <script> element via textContent never executes, so trigger directly.
+  try {
+    (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+  } catch (_) {}
 
   let count = 5;
   const tick = setInterval(() => {
@@ -72,8 +74,13 @@ function showAdPopup(watchHref) {
       clearInterval(tick);
       timer.textContent = "✓";
       timer.style.color = "#4caf50";
-      msg.textContent = "Ad complete — watch now!";
+      msg.textContent = "Ad complete — redirecting…";
       skipBtn.style.display = "block";
+      // Auto-continue to the video shortly after the countdown finishes.
+      setTimeout(() => {
+        overlay.remove();
+        window.location.href = watchHref;
+      }, 1200);
     }
   }, 1000);
 }
@@ -86,9 +93,8 @@ export default function VideoCard({ offer: o }) {
   const posterUrl = String(o.poster_url || "").trim();
 
   useEffect(() => {
-    if (posterWrapRef.current) {
-      fillPosterSlot(posterWrapRef.current, String(o.video_url || ""), posterUrl, articleRef.current);
-    }
+    if (!posterWrapRef.current) return undefined;
+    return fillPosterSlot(posterWrapRef.current, String(o.video_url || ""), posterUrl, articleRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [o.id]);
 
@@ -109,23 +115,27 @@ export default function VideoCard({ offer: o }) {
     >
       <div className="video-card__media">
         <div className="video-card__accent-bar" aria-hidden="true" />
-        <Link className="video-card__thumb-link" href={watchHref} aria-label={`Watch: ${o.title}`}>
+        <div
+          className="video-card__thumb-link"
+          role="button"
+          tabIndex={0}
+          aria-label={`Watch: ${o.title}`}
+          style={{ cursor: "pointer" }}
+          onClick={() => showAdPopup(watchHref)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              showAdPopup(watchHref);
+            }
+          }}
+        >
           <div className="video-card__poster-wrap" ref={posterWrapRef}>
             <span className="video-card__duration-badge" aria-hidden="true">
               HD
             </span>
-            <span
-              className="video-card__play"
-              aria-hidden="true"
-              style={{ cursor: "pointer" }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                showAdPopup(watchHref);
-              }}
-            />
+            <span className="video-card__play" aria-hidden="true" />
           </div>
-        </Link>
+        </div>
       </div>
 
       <div className="video-card__body">

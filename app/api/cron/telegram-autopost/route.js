@@ -25,8 +25,8 @@ async function markPosted(supabase, kind, id) {
   await supabase.from("telegram_posted").insert({ content_type: kind, content_id: id });
 }
 
-async function broadcast(bot, text, channelId) {
-  await bot.channel(`telegram:${channelId}`).post({ markdown: text });
+async function broadcast(bot, card, channelId) {
+  await bot.channel(`telegram:${channelId}`).post(card);
 }
 
 export async function GET(request) {
@@ -48,24 +48,27 @@ export async function GET(request) {
     return Response.json({ ok: false, reason: "Supabase not configured" }, { status: 200 });
   }
 
-  const { bot, teaserFor, linkFor, siteName } = await import("../../../../src/lib/telegram-bot.js");
+  const { bot, itemCard } = await import("../../../../src/lib/telegram-bot.js");
   const supabase = getSupabase();
 
+  // Default 5/run for the recurring cron; pass ?limit=1000 (capped) for a
+  // one-off backfill of every existing unposted video/story.
+  const requestedLimit = Number(new URL(request.url).searchParams.get("limit"));
+  const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 1000) : 5;
+
   const [offers, stories] = await Promise.all([
-    unpostedItems(supabase, "offers", "offer", 5),
-    unpostedItems(supabase, "stories", "story", 5),
+    unpostedItems(supabase, "offers", "offer", limit),
+    unpostedItems(supabase, "stories", "story", limit),
   ]);
 
   let posted = 0;
   for (const offer of offers) {
-    const text = `${teaserFor(offer)}\n\n👉 [Watch on ${siteName()}](${linkFor(offer, "offer")})`;
-    await broadcast(bot, text, channelId);
+    await broadcast(bot, itemCard(offer, "offer"), channelId);
     await markPosted(supabase, "offer", offer.id);
     posted += 1;
   }
   for (const story of stories) {
-    const text = `${teaserFor(story)}\n\n👉 [Read on ${siteName()}](${linkFor(story, "story")})`;
-    await broadcast(bot, text, channelId);
+    await broadcast(bot, itemCard(story, "story"), channelId);
     await markPosted(supabase, "story", story.id);
     posted += 1;
   }

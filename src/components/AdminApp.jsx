@@ -130,9 +130,14 @@ export default function AdminApp() {
           <section className="admin-section">
             <div className="admin-section__head">
               <h2 className="admin-section__title">Videos (public grid)</h2>
-              <button type="button" className="btn btn--primary btn--sm" id="btn-offer-new">
-                Add video
-              </button>
+              <div className="admin-section__head-actions">
+                <button type="button" className="btn btn--ghost btn--sm" id="btn-offer-bulk">
+                  Bulk add videos
+                </button>
+                <button type="button" className="btn btn--primary btn--sm" id="btn-offer-new">
+                  Add video
+                </button>
+              </div>
             </div>
             <p className="admin-section__hint">
               The homepage only shows rows that are <strong>Active</strong> and have a <strong>Video URL</strong>.
@@ -144,6 +149,8 @@ export default function AdminApp() {
                 <thead>
                   <tr>
                     <th>Title</th>
+                    <th>Series</th>
+                    <th>Ep.</th>
                     <th>Video</th>
                     <th>Link</th>
                     <th>Order</th>
@@ -229,6 +236,24 @@ export default function AdminApp() {
               id="offer-desc"
             />
           </label>
+          <div className="field__row">
+            <label className="field">
+              <span className="field__label">Series name (optional)</span>
+              <input
+                type="text"
+                name="series"
+                className="field__input"
+                maxLength={120}
+                id="offer-series"
+                placeholder="e.g. My Video Series"
+              />
+              <span className="field__hint">Groups related videos together on the watch page.</span>
+            </label>
+            <label className="field">
+              <span className="field__label">Episode #</span>
+              <input type="number" name="episode" className="field__input" id="offer-episode" min={0} />
+            </label>
+          </div>
           <fieldset className="admin-fieldset">
             <legend className="admin-fieldset__legend">SEO (optional)</legend>
             <label className="field">
@@ -340,6 +365,77 @@ export default function AdminApp() {
             </button>
             <button type="submit" className="btn btn--primary" value="save">
               Save
+            </button>
+          </div>
+        </form>
+      </dialog>
+
+      <dialog id="dlg-offer-bulk" className="admin-dialog admin-dialog--wide">
+        <form id="form-offer-bulk" className="admin-dialog__inner">
+          <h3 className="admin-dialog__title">Bulk add videos</h3>
+          <label className="field">
+            <span className="field__label">Series name (required)</span>
+            <input
+              type="text"
+              name="series"
+              className="field__input"
+              required
+              maxLength={120}
+              id="offer-bulk-series"
+              placeholder="e.g. My Video Series"
+            />
+          </label>
+          <div className="field__row">
+            <label className="field">
+              <span className="field__label">Start at episode #</span>
+              <input
+                type="number"
+                name="start_episode"
+                className="field__input"
+                id="offer-bulk-start-ep"
+                defaultValue={1}
+                min={0}
+              />
+            </label>
+            <label className="field">
+              <span className="field__label">Tags (applied to all)</span>
+              <input
+                type="text"
+                name="tags"
+                className="field__input"
+                maxLength={500}
+                id="offer-bulk-tags"
+                placeholder="comic, series"
+              />
+            </label>
+          </div>
+          <label className="field">
+            <span className="field__label">Video links — one per line, in episode order</span>
+            <textarea
+              name="links"
+              className="field__input field__input--area"
+              rows={10}
+              required
+              id="offer-bulk-links"
+              placeholder={"https://…/episode-1.mp4\nhttps://…/episode-2.mp4\nCustom Title | https://…/special.mp4"}
+            />
+            <span className="field__hint">
+              Each line becomes the next episode. Plain URL → title “Series — Episode N”. Use{" "}
+              <code>Title | URL</code> to set a custom title. Blank lines are skipped. Slugs are generated
+              automatically.
+            </span>
+          </label>
+          <label className="field field--row">
+            <input type="checkbox" name="is_active" id="offer-bulk-active" defaultChecked />
+            <span className="field__label field__label--inline">Visible on public site</span>
+          </label>
+          <p id="offer-bulk-preview" className="field__hint" />
+          <div className="admin-dialog__actions">
+            <button type="button" className="btn btn--ghost" id="offer-bulk-cancel">
+              Cancel
+            </button>
+            <button type="submit" className="btn btn--primary" id="offer-bulk-save">
+              Add all
             </button>
           </div>
         </form>

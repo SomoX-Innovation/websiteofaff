@@ -67,7 +67,9 @@ export async function fetchPublicCatalog() {
     supabase.from("site_settings").select("key, value"),
     supabase
       .from("offers")
-      .select("id, title, description, href, video_url, poster_url, slug, meta_title, meta_description, tags, category")
+      .select(
+        "id, title, description, href, video_url, poster_url, slug, meta_title, meta_description, tags, category, series, episode"
+      )
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
   ]);

@@ -1,8 +1,8 @@
-import { Chat } from "chat";
+import { Chat, Card, CardText, Actions, Button, LinkButton, Image } from "chat";
 import { createTelegramAdapter } from "@chat-adapter/telegram";
 import { createPostgresState } from "@chat-adapter/state-pg";
 import { createMemoryState } from "@chat-adapter/state-memory";
-import { getSupabase, isSupabaseConfigured } from "./supabase.js";
+import { getSupabase, isSupabaseConfigured, getPublicStorageUrl } from "./supabase.js";
 import { fallbackSite } from "../affiliate-config.js";
 
 function siteUrl() {
@@ -29,6 +29,29 @@ function linkFor(item, kind) {
       ? `/stories/${encodeURIComponent(item.slug || item.id)}`
       : `/watch/${encodeURIComponent(item.slug ? item.slug : `id-${item.id}`)}`;
   return base ? `${base}${path}` : path;
+}
+
+/** Public, absolute poster/cover image URL for a Telegram card, or null if none set. */
+function posterUrlFor(item, kind) {
+  const raw = String((kind === "story" ? item.cover_url : item.poster_url) || "").trim();
+  if (!raw) return null;
+  const resolved = getPublicStorageUrl(raw) || raw;
+  if (!resolved.startsWith("http")) return null;
+  return resolved;
+}
+
+/** A single item announcement: image (if any) + SFW teaser + link button — never explicit media in-chat. */
+function itemCard(item, kind) {
+  const poster = posterUrlFor(item, kind);
+  const linkLabel = kind === "story" ? `Read on ${siteName()}` : `Watch on ${siteName()}`;
+  return Card({
+    title: String(item.title || "").trim() || (kind === "story" ? "New story" : "New video"),
+    children: [
+      ...(poster ? [Image({ url: poster, alt: item.title || "" })] : []),
+      CardText(teaserFor(item)),
+      Actions([LinkButton({ url: linkFor(item, kind), children: linkLabel })]),
+    ],
+  });
 }
 
 const hasPostgresState = Boolean(process.env.POSTGRES_URL || process.env.DATABASE_URL);
@@ -74,6 +97,58 @@ async function fetchLatest(kind, limit = 5) {
   return data || [];
 }
 
+const VIDEOS_PAGE_SIZE = 8;
+
+/** One page of active videos, newest first, plus whether more pages exist. */
+async function fetchOffersPage(page = 0) {
+  if (!isSupabaseConfigured()) return { items: [], hasMore: false, total: 0 };
+  const supabase = getSupabase();
+  const from = page * VIDEOS_PAGE_SIZE;
+  const to = from + VIDEOS_PAGE_SIZE - 1;
+  const { data, error, count } = await supabase
+    .from("offers")
+    .select("*", { count: "exact" })
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .range(from, to);
+  if (error) return { items: [], hasMore: false, total: 0 };
+  const total = count ?? 0;
+  return { items: data || [], hasMore: from + (data?.length || 0) < total, total };
+}
+
+function videosCard(page, { items, hasMore, total }) {
+  if (!items.length) {
+    return Card({ title: `Videos on ${siteName()}`, children: [CardText("No videos found.")] });
+  }
+
+  const start = page * VIDEOS_PAGE_SIZE + 1;
+  const end = page * VIDEOS_PAGE_SIZE + items.length;
+  const buttons = items.map((o) =>
+    LinkButton({ url: linkFor(o, "offer"), children: `▶ ${o.title.slice(0, 28)}` })
+  );
+  const navButtons = [];
+  if (page > 0) navButtons.push(Button({ id: "videos_page", value: String(page - 1), children: "◀ Previous" }));
+  if (hasMore) navButtons.push(Button({ id: "videos_page", value: String(page + 1), children: "Next ▶" }));
+
+  return Card({
+    title: `Videos on ${siteName()}`,
+    children: [CardText(`Showing ${start}–${end} of ${total}`), Actions([...buttons, ...navButtons])],
+  });
+}
+
+bot.onSlashCommand("/videos", async (event) => {
+  const page = 0;
+  const data = await fetchOffersPage(page);
+  await event.channel.post(videosCard(page, data));
+});
+
+bot.onAction("videos_page", async (event) => {
+  const page = Number(event.value) || 0;
+  const data = await fetchOffersPage(page);
+  if (!event.thread) return;
+  await event.thread.post(videosCard(page, data));
+});
+
 bot.onSlashCommand(["/start", "/help"], async (event) => {
   await saveSubscriber(event.user, event.channel.id);
   await event.channel.post(
@@ -82,6 +157,7 @@ bot.onSlashCommand(["/start", "/help"], async (event) => {
       "",
       "Commands:",
       "/latest — see the newest drops",
+      "/videos — browse all videos",
       "/site — get the site link",
       "/stop — unsubscribe from updates",
     ].join("\n")
@@ -122,4 +198,4 @@ bot.onDirectMessage(async (thread, message) => {
   );
 });
 
-export { teaserFor, linkFor, fetchLatest, siteUrl, siteName };
+export { teaserFor, linkFor, posterUrlFor, itemCard, fetchLatest, fetchOffersPage, siteUrl, siteName };

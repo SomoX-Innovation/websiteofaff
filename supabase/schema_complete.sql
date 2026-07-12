@@ -39,6 +39,8 @@ alter table public.offers add column if not exists meta_title text;
 alter table public.offers add column if not exists meta_description text;
 alter table public.offers add column if not exists tags text;
 alter table public.offers add column if not exists category text;
+alter table public.offers add column if not exists series text;
+alter table public.offers add column if not exists episode int;
 alter table public.offers alter column href drop not null;
 
 create unique index if not exists offers_slug_unique

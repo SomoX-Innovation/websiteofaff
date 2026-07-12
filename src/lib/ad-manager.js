@@ -10,7 +10,7 @@ export const AD_CONFIG = {
   EXOCLICK_SIDEBAR_300x250_ID:   "5900204",  // Banner 300x250 (sidebar)
   EXOCLICK_STICKY_728x90_ID:     "5900606",  // Sticky Banner 728x90
   EXOCLICK_INSTANT_MSG_ID:       "5899668",  // Instant Message 300x250
-  EXOCLICK_INTERSTITIAL_D_ID:    "5900608",  // Desktop Fullpage Interstitial
+  EXOCLICK_INTERSTITIAL_D_ID:    "5972168",  // Desktop Fullpage Interstitial
   EXOCLICK_INTERSTITIAL_M_ID:    "5900714",  // Mobile Fullpage Interstitial
   EXOCLICK_OUTSTREAM_ID:         "5900780",  // Outstream Video
   EXOCLICK_RECOMMENDATION_ID:    "5900782",  // Recommendation Widget
@@ -100,21 +100,44 @@ const MAGSRV_STEPS = [
 
 const STEP_DURATIONS = [10]; // seconds per step
 
-/** Open a new tab that renders a fullpage ExoClick ad. */
+/**
+ * Open a new tab that renders a fullpage ExoClick ad.
+ *
+ * Built with real DOM APIs (createElement + appendChild) instead of
+ * document.write: write() on a popup's document is throttled/blocked by
+ * modern browsers for cross-origin async scripts and frequently races the
+ * browser reclaiming the tab, which left the tab stuck on about:blank with
+ * nothing rendered.
+ */
 function openAdTab() {
   try {
     const w = window.open('about:blank', '_blank');
     if (!w) return false;
-    w.document.write(`<!DOCTYPE html><html><head>
-      <script async src="https://a.magsrv.com/ad-provider.js"><\/script>
-      </head><body>
-      <ins class="${EXO_INS_CLASS}" data-zoneid="${AD_CONFIG.EXOCLICK_INTERSTITIAL_D_ID}" data-keywords="adult"
-           data-block-ad-types="0"></ins>
-      <script>(AdProvider=window.AdProvider||[]).push({"serve":{}});<\/script>
-      </body></html>`);
-    w.document.close();
+
+    const doc = w.document;
+    doc.title = 'Advertisement';
+
+    // This zone's embed code (from ExoClick) uses the pemsrv.com loader and
+    // the eas6a97888e35 marker class — a different network/class pairing
+    // than the other magsrv.com zones on this site, so it can't share
+    // EXO_INS_CLASS or the magsrv script.
+    const ins = doc.createElement('ins');
+    ins.className = 'eas6a97888e35';
+    ins.setAttribute('data-zoneid', AD_CONFIG.EXOCLICK_INTERSTITIAL_D_ID);
+    doc.body.appendChild(ins);
+
+    const adScript = doc.createElement('script');
+    adScript.async = true;
+    adScript.type = 'application/javascript';
+    adScript.src = 'https://a.pemsrv.com/ad-provider.js';
+    adScript.onload = () => {
+      w.AdProvider = w.AdProvider || [];
+      w.AdProvider.push({ serve: {} });
+    };
+    doc.head.appendChild(adScript);
+
     return true;
-  } catch(_) {
+  } catch (_) {
     return false;
   }
 }
@@ -167,7 +190,12 @@ export function initButtonClickAds() {
   );
 }
 
-/** Build one MagSrv <ins> + trigger inside a wrapper div */
+/**
+ * Build one MagSrv <ins> inside a wrapper div. Caller must append the
+ * returned node to the live DOM, then call requestAdServe() — a <script>
+ * built via createElement + textContent never executes, so the serve
+ * trigger can't live inside this function.
+ */
 function buildMagsrvAd(cls, zoneId) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:10px;min-height:260px;';
@@ -181,11 +209,13 @@ function buildMagsrvAd(cls, zoneId) {
   ins.setAttribute('data-ex_av', 'name');
   wrap.appendChild(ins);
 
-  const trigger = document.createElement('script');
-  trigger.textContent = '(AdProvider = window.AdProvider || []).push({"serve": {}});';
-  wrap.appendChild(trigger);
-
   return wrap;
+}
+
+function requestAdServe() {
+  try {
+    (window.AdProvider = window.AdProvider || []).push({ serve: {} });
+  } catch (_) {}
 }
 
 /**
@@ -258,8 +288,9 @@ export function showPopupAdOverlay(duration = 8, onComplete = null) {
     // Update step label
     stepLabel.textContent = totalSteps > 1 ? `Step ${stepIndex + 1} of ${totalSteps}` : '';
 
-    // Swap ad
+    // Swap ad — must be in the live DOM before requesting a serve.
     adSlot.replaceChildren(buildMagsrvAd(cls, zoneId));
+    requestAdServe();
 
     // Show button immediately but disabled during countdown
     btn.style.display = 'block';

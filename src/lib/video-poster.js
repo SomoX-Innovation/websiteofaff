@@ -178,9 +178,46 @@ function observeWhenConnected(io, target) {
  * Populate a card/sidebar poster area: explicit URL, YouTube thumb, or lazy async frame/Vimeo.
  * @param {HTMLElement} posterWrap - receives img or fallback first; caller adds overlays after.
  * @param {HTMLElement} ioRoot - usually the card row (for IntersectionObserver)
+ * @returns {() => void} cleanup — call on unmount to stop pending async work from touching the DOM.
  */
 export function fillPosterSlot(posterWrap, videoUrl, explicitPoster, ioRoot) {
   const ep = String(explicitPoster || "").trim();
+  let cancelled = false;
+  let disconnectIo = () => {};
+
+  // Shows the dark placeholder immediately, then swaps in an auto-captured
+  // frame (YouTube thumb / Vimeo oEmbed / video frame grab) once available.
+  const showAutoFallback = () => {
+    const ph = document.createElement("div");
+    ph.className = "video-card__poster-fallback";
+    ph.setAttribute("aria-hidden", "true");
+    posterWrap.insertBefore(ph, posterWrap.firstChild);
+
+    const root =
+      ioRoot || posterWrap.closest(".video-card") || posterWrap.closest(".watch-mini") || posterWrap;
+    const io = new IntersectionObserver((entries) => {
+      if (!entries[0]?.isIntersecting) return;
+      io.disconnect();
+      void asyncAutoPosterUrl(videoUrl).then((url) => {
+        // The component may have unmounted (route change) while this async
+        // work was in flight — React can be mid-teardown of this subtree,
+        // so mutating it here would throw "removeChild on null" downstream.
+        if (cancelled || !url || !posterWrap.isConnected || !ph.isConnected) return;
+        const finalUrl = getPublicStorageUrl(url) || url;
+        const img = document.createElement("img");
+        // Auto-captured frames can be any aspect ratio (portrait, unusual crops) —
+        // center/contain them instead of cover so nothing gets cropped away.
+        img.className = "video-card__poster-img video-card__poster-img--auto";
+        img.src = finalUrl;
+        img.alt = "";
+        img.loading = "lazy";
+        ph.replaceWith(img);
+      });
+    }, IO_OPTS);
+    disconnectIo = () => io.disconnect();
+    observeWhenConnected(io, root);
+  };
+
   const addImg = (src) => {
     const normalizedSrc = normalizePosterUrl(src);
     if (normalizedSrc === null) {
@@ -192,56 +229,83 @@ export function fillPosterSlot(posterWrap, videoUrl, explicitPoster, ioRoot) {
     img.src = finalUrl;
     img.alt = "";
     img.loading = "lazy";
-    
-    img.addEventListener("error", (e) => {
-      console.warn("✗ Poster slot failed:", finalUrl, e);
-    });
-    
+
+    // Broken/expired poster URLs (404, CORS block) would otherwise leave the
+    // browser's broken-image icon on screen — fall back to an auto-captured
+    // frame instead.
+    img.addEventListener(
+      "error",
+      (e) => {
+        if (cancelled) return;
+        console.warn("✗ Poster slot failed:", finalUrl, e);
+        if (img.isConnected) img.remove();
+        showAutoFallback();
+      },
+      { once: true }
+    );
+
     posterWrap.insertBefore(img, posterWrap.firstChild);
     return true;
   };
 
   if (ep) {
     if (addImg(ep)) {
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
   }
 
   const yt = syncYoutubePosterUrl(videoUrl);
   if (yt) {
     addImg(yt);
-    return;
+  } else {
+    showAutoFallback();
   }
 
-  const ph = document.createElement("div");
-  ph.className = "video-card__poster-fallback";
-  ph.setAttribute("aria-hidden", "true");
-  posterWrap.insertBefore(ph, posterWrap.firstChild);
-
-  const root =
-    ioRoot || posterWrap.closest(".video-card") || posterWrap.closest(".watch-mini") || posterWrap;
-  const io = new IntersectionObserver((entries) => {
-    if (!entries[0]?.isIntersecting) return;
-    io.disconnect();
-    void asyncAutoPosterUrl(videoUrl).then((url) => {
-      if (!url || !posterWrap.isConnected) return;
-      const finalUrl = getPublicStorageUrl(url) || url;
-      const img = document.createElement("img");
-      img.className = "video-card__poster-img";
-      img.src = finalUrl;
-      img.alt = "";
-      img.loading = "lazy";
-      ph.replaceWith(img);
-    });
-  }, IO_OPTS);
-  observeWhenConnected(io, root);
+  return () => {
+    cancelled = true;
+    disconnectIo();
+  };
 }
 
 /**
  * Mini sidebar thumb: same logic, classes for watch-mini layout.
+ * @returns {() => void} cleanup — call on unmount to stop pending async work from touching the DOM.
  */
 export function fillMiniPosterSlot(thumbMount, videoUrl, explicitPoster, ioRoot) {
   const ep = String(explicitPoster || "").trim();
+  let cancelled = false;
+  let disconnectIo = () => {};
+
+  const showAutoFallback = () => {
+    const ph = document.createElement("div");
+    ph.className = "watch-mini__thumb-fallback";
+    ph.setAttribute("aria-hidden", "true");
+    thumbMount.appendChild(ph);
+
+    const root = ioRoot || thumbMount.closest(".watch-mini") || thumbMount;
+    const io = new IntersectionObserver((entries) => {
+      if (!entries[0]?.isIntersecting) return;
+      io.disconnect();
+      void asyncAutoPosterUrl(videoUrl).then((url) => {
+        // Component may have unmounted (route change) while this was pending.
+        if (cancelled || !url || !thumbMount.isConnected || !ph.isConnected) return;
+        const finalUrl = getPublicStorageUrl(url) || url;
+        const img = document.createElement("img");
+        // Auto-captured frames can be any aspect ratio — center/contain instead
+        // of cover so nothing gets cropped away.
+        img.className = "watch-mini__thumb-img--auto";
+        img.src = finalUrl;
+        img.alt = "";
+        img.loading = "lazy";
+        ph.replaceWith(img);
+      });
+    }, IO_OPTS);
+    disconnectIo = () => io.disconnect();
+    observeWhenConnected(io, root);
+  };
+
   const addImg = (src) => {
     const normalizedSrc = normalizePosterUrl(src);
     if (normalizedSrc === null) {
@@ -252,45 +316,41 @@ export function fillMiniPosterSlot(thumbMount, videoUrl, explicitPoster, ioRoot)
     img.src = finalUrl;
     img.alt = "";
     img.loading = "lazy";
-    
-    img.addEventListener("error", (e) => {
-      console.warn("✗ Mini poster failed:", finalUrl, e);
-    });
-    
+
+    // Broken/expired poster URLs would otherwise leave the browser's
+    // broken-image icon on screen — fall back to an auto-captured frame.
+    img.addEventListener(
+      "error",
+      (e) => {
+        if (cancelled) return;
+        console.warn("✗ Mini poster failed:", finalUrl, e);
+        if (img.isConnected) img.remove();
+        showAutoFallback();
+      },
+      { once: true }
+    );
+
     thumbMount.appendChild(img);
     return true;
   };
 
   if (ep) {
     if (addImg(ep)) {
-      return;
+      return () => {
+        cancelled = true;
+      };
     }
   }
 
   const yt = syncYoutubePosterUrl(videoUrl);
   if (yt) {
     addImg(yt);
-    return;
+  } else {
+    showAutoFallback();
   }
 
-  const ph = document.createElement("div");
-  ph.className = "watch-mini__thumb-fallback";
-  ph.setAttribute("aria-hidden", "true");
-  thumbMount.appendChild(ph);
-
-  const root = ioRoot || thumbMount.closest(".watch-mini") || thumbMount;
-  const io = new IntersectionObserver((entries) => {
-    if (!entries[0]?.isIntersecting) return;
-    io.disconnect();
-    void asyncAutoPosterUrl(videoUrl).then((url) => {
-      if (!url || !thumbMount.isConnected) return;
-      const finalUrl = getPublicStorageUrl(url) || url;
-      const img = document.createElement("img");
-      img.src = finalUrl;
-      img.alt = "";
-      img.loading = "lazy";
-      ph.replaceWith(img);
-    });
-  }, IO_OPTS);
-  observeWhenConnected(io, root);
+  return () => {
+    cancelled = true;
+    disconnectIo();
+  };
 }

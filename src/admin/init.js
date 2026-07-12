@@ -96,11 +96,12 @@ function renderOffers(rows, supabase, refreshData) {
   if (!tbody) return;
   tbody.replaceChildren();
 
+  lastOfferRows = rows || [];
   const sorted = [...(rows || [])].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
 
   if (sorted.length === 0) {
     const tr = document.createElement("tr");
-    tr.innerHTML = `<td colspan="6" class="admin-table__empty">No rows yet — click “Add video”.</td>`;
+    tr.innerHTML = `<td colspan="8" class="admin-table__empty">No rows yet — click “Add video”.</td>`;
     tbody.appendChild(tr);
     return;
   }
@@ -116,16 +117,21 @@ function renderOffers(rows, supabase, refreshData) {
     if (!o.is_active) tr.classList.add("admin-table__row--muted");
     tr.innerHTML = `
       <td class="admin-table__cell-title"></td>
-      <td class="admin-table__mono"></td>
-      <td class="admin-table__mono"></td>
-      <td class="admin-table__num"></td>
+      <td class="admin-table__mono admin-table__mono--series"></td>
+      <td class="admin-table__num admin-table__num--ep"></td>
+      <td class="admin-table__mono admin-table__mono--video"></td>
+      <td class="admin-table__mono admin-table__mono--link"></td>
+      <td class="admin-table__num admin-table__num--order"></td>
       <td class="admin-table__bool"></td>
       <td class="admin-table__actions"></td>
     `;
     tr.querySelector(".admin-table__cell-title").textContent = o.title;
-    const cells = tr.querySelectorAll(".admin-table__mono");
-    cells[0].textContent = clip(o.video_url, 40);
+    const series = String(o.series || "").trim();
+    tr.querySelector(".admin-table__mono--series").textContent = series ? clip(series, 24) : "—";
+    tr.querySelector(".admin-table__num--ep").textContent = o.episode != null ? String(o.episode) : "—";
+    tr.querySelector(".admin-table__mono--video").textContent = clip(o.video_url, 40);
     const href = String(o.href || "").trim();
+    const linkCell = tr.querySelector(".admin-table__mono--link");
     if (href) {
       const a = document.createElement("a");
       a.className = "admin-table__link";
@@ -133,11 +139,11 @@ function renderOffers(rows, supabase, refreshData) {
       a.target = "_blank";
       a.rel = "noopener";
       a.textContent = clip(href, 36);
-      cells[1].replaceChildren(a);
+      linkCell.replaceChildren(a);
     } else {
-      cells[1].textContent = "—";
+      linkCell.textContent = "—";
     }
-    tr.querySelector(".admin-table__num").textContent = String(o.sort_order ?? 0);
+    tr.querySelector(".admin-table__num--order").textContent = String(o.sort_order ?? 0);
     tr.querySelector(".admin-table__bool").textContent = o.is_active ? "Yes" : "No";
 
     const actions = tr.querySelector(".admin-table__actions");
@@ -167,14 +173,15 @@ function renderOffers(rows, supabase, refreshData) {
   }
 }
 
-/** Latest loaded story rows — used by the bulk dialog to suggest the next episode number. */
+/** Latest loaded story/offer rows — used by the bulk dialogs to suggest the next episode number. */
 let lastStoryRows = [];
+let lastOfferRows = [];
 
 /**
  * Parse bulk episode lines: each non-empty line is either a plain URL or
  * "Custom Title | URL". Returns { items, badLines }.
  */
-function parseBulkStoryLines(text) {
+function parseBulkLines(text) {
   const items = [];
   const badLines = [];
   const lines = String(text || "").split(/\r?\n/);
@@ -197,11 +204,11 @@ function parseBulkStoryLines(text) {
   return { items, badLines };
 }
 
-function nextEpisodeForSeries(series) {
+function nextEpisodeForSeriesIn(rows, series) {
   const wanted = String(series || "").trim().toLowerCase();
   if (!wanted) return 1;
   let max = 0;
-  for (const s of lastStoryRows) {
+  for (const s of rows) {
     if (String(s.series || "").trim().toLowerCase() !== wanted) continue;
     const ep = Number(s.episode);
     if (Number.isFinite(ep) && ep > max) max = ep;
@@ -209,11 +216,19 @@ function nextEpisodeForSeries(series) {
   return max + 1;
 }
 
-function updateBulkPreview() {
-  const box = el("bulk-preview");
+function nextEpisodeForSeries(series) {
+  return nextEpisodeForSeriesIn(lastStoryRows, series);
+}
+
+function nextEpisodeForOfferSeries(series) {
+  return nextEpisodeForSeriesIn(lastOfferRows, series);
+}
+
+function updateBulkPreview(linksElId, startElId, previewElId) {
+  const box = el(previewElId);
   if (!box) return;
-  const { items, badLines } = parseBulkStoryLines(el("bulk-links")?.value);
-  const start = Number(el("bulk-start-ep")?.value) || 1;
+  const { items, badLines } = parseBulkLines(el(linksElId)?.value);
+  const start = Number(el(startElId)?.value) || 1;
   const parts = [];
   if (items.length) {
     parts.push(`Will add ${items.length} episode${items.length === 1 ? "" : "s"} (Ep ${start}–${start + items.length - 1}).`);
@@ -361,6 +376,8 @@ function openOfferDialog(row) {
   el("offer-video").value = row?.video_url || "";
   el("offer-poster").value = row?.poster_url || "";
   el("offer-href").value = row?.href || "";
+  el("offer-series").value = row?.series || "";
+  el("offer-episode").value = row?.episode != null ? String(row.episode) : "";
   el("offer-sort").value = row != null ? String(row.sort_order ?? 0) : "0";
   el("offer-active").checked = row ? Boolean(row.is_active) : true;
   el("offer-slug").value = row?.slug || "";
@@ -395,7 +412,7 @@ export function initAdminPage() {
       supabase
         .from("offers")
         .select(
-          "id, title, description, href, video_url, poster_url, slug, meta_title, meta_description, tags, category, sort_order, is_active"
+          "id, title, description, href, video_url, poster_url, slug, meta_title, meta_description, tags, category, series, episode, sort_order, is_active"
         )
         .order("sort_order", { ascending: true }),
       supabase
@@ -618,12 +635,15 @@ export function initAdminPage() {
       const slugRaw = el("offer-slug").value.trim().toLowerCase();
       const slug = slugRaw ? slugifyOfferText(slugRaw) : null;
       const tagsCsv = tax?.getCsv() || "";
+      const episodeRaw = el("offer-episode").value.trim();
       const payload = {
         title: el("offer-title").value.trim(),
         description: el("offer-desc").value.trim() || null,
         video_url: el("offer-video").value.trim() || null,
         poster_url: el("offer-poster").value.trim() || null,
         href: el("offer-href").value.trim() || null,
+        series: el("offer-series").value.trim() || null,
+        episode: episodeRaw ? Number(episodeRaw) : null,
         slug,
         meta_title: el("offer-meta-title").value.trim() || null,
         meta_description: el("offer-meta-desc").value.trim() || null,
@@ -732,13 +752,21 @@ export function initAdminPage() {
     "change",
     () => {
       el("bulk-start-ep").value = String(nextEpisodeForSeries(el("bulk-series").value));
-      updateBulkPreview();
+      updateBulkPreview("bulk-links", "bulk-start-ep", "bulk-preview");
     },
     { signal }
   );
 
-  el("bulk-links")?.addEventListener("input", updateBulkPreview, { signal });
-  el("bulk-start-ep")?.addEventListener("input", updateBulkPreview, { signal });
+  el("bulk-links")?.addEventListener(
+    "input",
+    () => updateBulkPreview("bulk-links", "bulk-start-ep", "bulk-preview"),
+    { signal }
+  );
+  el("bulk-start-ep")?.addEventListener(
+    "input",
+    () => updateBulkPreview("bulk-links", "bulk-start-ep", "bulk-preview"),
+    { signal }
+  );
 
   el("form-story-bulk")?.addEventListener(
     "submit",
@@ -748,7 +776,7 @@ export function initAdminPage() {
       const tags = el("bulk-tags").value.trim() || null;
       const isActive = el("bulk-active").checked;
       const start = Number(el("bulk-start-ep").value) || 1;
-      const { items, badLines } = parseBulkStoryLines(el("bulk-links").value);
+      const { items, badLines } = parseBulkLines(el("bulk-links").value);
 
       if (!series) {
         flash("Series name is required for bulk add.", false);
@@ -798,6 +826,106 @@ export function initAdminPage() {
       el("dlg-story-bulk")?.close();
       const skipped = badLines.length ? ` (${badLines.length} invalid line${badLines.length === 1 ? "" : "s"} skipped)` : "";
       flash(`Added ${rows.length} episode${rows.length === 1 ? "" : "s"} to “${series}”${skipped}.`);
+      await refreshData(supabase);
+    },
+    { signal }
+  );
+
+  el("btn-offer-bulk")?.addEventListener(
+    "click",
+    () => {
+      const d = el("dlg-offer-bulk");
+      if (!d) return;
+      el("form-offer-bulk")?.reset();
+      el("offer-bulk-start-ep").value = "1";
+      const preview = el("offer-bulk-preview");
+      if (preview) preview.textContent = "";
+      d.showModal();
+    },
+    { signal }
+  );
+
+  el("offer-bulk-cancel")?.addEventListener("click", () => el("dlg-offer-bulk")?.close(), { signal });
+
+  // Suggest the next episode number once a known series name is typed.
+  el("offer-bulk-series")?.addEventListener(
+    "change",
+    () => {
+      el("offer-bulk-start-ep").value = String(nextEpisodeForOfferSeries(el("offer-bulk-series").value));
+      updateBulkPreview("offer-bulk-links", "offer-bulk-start-ep", "offer-bulk-preview");
+    },
+    { signal }
+  );
+
+  el("offer-bulk-links")?.addEventListener(
+    "input",
+    () => updateBulkPreview("offer-bulk-links", "offer-bulk-start-ep", "offer-bulk-preview"),
+    { signal }
+  );
+  el("offer-bulk-start-ep")?.addEventListener(
+    "input",
+    () => updateBulkPreview("offer-bulk-links", "offer-bulk-start-ep", "offer-bulk-preview"),
+    { signal }
+  );
+
+  el("form-offer-bulk")?.addEventListener(
+    "submit",
+    async (e) => {
+      e.preventDefault();
+      const series = el("offer-bulk-series").value.trim();
+      const tags = el("offer-bulk-tags").value.trim() || null;
+      const isActive = el("offer-bulk-active").checked;
+      const start = Number(el("offer-bulk-start-ep").value) || 1;
+      const { items, badLines } = parseBulkLines(el("offer-bulk-links").value);
+
+      if (!series) {
+        flash("Series name is required for bulk add.", false);
+        return;
+      }
+      if (items.length === 0) {
+        flash("No valid video URLs found — paste one https:// link per line.", false);
+        return;
+      }
+
+      const stamp = Date.now().toString(36);
+      const rows = items.map((item, i) => {
+        const episode = start + i;
+        const title = item.title || `${series} — Episode ${episode}`;
+        // Suffix keeps slugs unique even when re-adding the same episode numbers.
+        const slug = slugifyOfferText(`${series}-episode-${episode}`) || `${stamp}-${episode}`;
+        return {
+          title,
+          series,
+          episode,
+          video_url: item.url,
+          slug,
+          tags,
+          sort_order: episode,
+          is_active: isActive,
+        };
+      });
+
+      const saveBtn = el("offer-bulk-save");
+      saveBtn.disabled = true;
+      saveBtn.textContent = "Adding…";
+
+      const { error } = await supabase.from("offers").insert(rows);
+
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Add all";
+
+      if (error) {
+        let msg = error.message;
+        if (msg?.includes("duplicate key") && msg?.includes("slug")) {
+          msg = `${msg} — some of these episodes already exist for “${series}”. Adjust “Start at episode #”.`;
+        }
+        flash(msg, false);
+        return;
+      }
+
+      el("dlg-offer-bulk")?.close();
+      const skipped = badLines.length ? ` (${badLines.length} invalid line${badLines.length === 1 ? "" : "s"} skipped)` : "";
+      flash(`Added ${rows.length} video${rows.length === 1 ? "" : "s"} to “${series}”${skipped}.`);
       await refreshData(supabase);
     },
     { signal }
