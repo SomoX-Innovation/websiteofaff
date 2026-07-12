@@ -3,6 +3,7 @@ import { createTelegramAdapter } from "@chat-adapter/telegram";
 import { createPostgresState } from "@chat-adapter/state-pg";
 import { createMemoryState } from "@chat-adapter/state-memory";
 import { getSupabase, isSupabaseConfigured, getPublicStorageUrl } from "./supabase.js";
+import { syncYoutubePosterUrl } from "./video-poster.js";
 import { fallbackSite } from "../affiliate-config.js";
 
 function siteUrl() {
@@ -34,10 +35,17 @@ function linkFor(item, kind) {
 /** Public, absolute poster/cover image URL for a Telegram card, or null if none set. */
 function posterUrlFor(item, kind) {
   const raw = String((kind === "story" ? item.cover_url : item.poster_url) || "").trim();
-  if (!raw) return null;
-  const resolved = getPublicStorageUrl(raw) || raw;
-  if (!resolved.startsWith("http")) return null;
-  return resolved;
+  if (raw) {
+    const resolved = getPublicStorageUrl(raw) || raw;
+    if (resolved.startsWith("http")) return resolved;
+  }
+  // No explicit poster (e.g. rows added via bulk-add, which doesn't collect
+  // one) — YouTube thumbnails are derivable from the URL with no extra work.
+  if (kind !== "story") {
+    const yt = syncYoutubePosterUrl(item.video_url);
+    if (yt) return yt;
+  }
+  return null;
 }
 
 /** A single item announcement: image (if any) + SFW teaser + link button — never explicit media in-chat. */

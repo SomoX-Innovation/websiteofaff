@@ -25,8 +25,25 @@ async function markPosted(supabase, kind, id) {
   await supabase.from("telegram_posted").insert({ content_type: kind, content_id: id });
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function broadcast(bot, card, channelId) {
-  await bot.channel(`telegram:${channelId}`).post(card);
+  const channel = bot.channel(`telegram:${channelId}`);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await channel.post(card);
+      return;
+    } catch (err) {
+      const retryAfter = err?.retryAfter || err?.code === "RATE_LIMITED" ? err.retryAfter || 3 : null;
+      if (retryAfter && attempt < 2) {
+        await sleep((retryAfter + 1) * 1000);
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 export async function GET(request) {
@@ -65,13 +82,17 @@ export async function GET(request) {
     unpostedItems(supabase, "stories", "story", limit),
   ]);
 
+  // Telegram allows roughly 1 message/sec to the same chat — pace posts so a
+  // large backfill doesn't get rate-limited partway through.
   let posted = 0;
   for (const offer of offers) {
+    if (posted > 0) await sleep(1100);
     await broadcast(bot, itemCard(offer, "offer"), channelId);
     await markPosted(supabase, "offer", offer.id);
     posted += 1;
   }
   for (const story of stories) {
+    if (posted > 0) await sleep(1100);
     await broadcast(bot, itemCard(story, "story"), channelId);
     await markPosted(supabase, "story", story.id);
     posted += 1;
