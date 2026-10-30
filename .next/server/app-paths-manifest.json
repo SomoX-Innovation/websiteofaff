@@ -1,0 +1,13 @@
+{
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/sitemap.xml/route": "app/sitemap.xml/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/page": "app/page.js",
+  "/contact/page": "app/contact/page.js",
+  "/alternatives/page": "app/alternatives/page.js",
+  "/privacy/page": "app/privacy/page.js",
+  "/watch/page": "app/watch/page.js",
+  "/terms/page": "app/terms/page.js",
+  "/watch/[slug]/page": "app/watch/[slug]/page.js"
+}

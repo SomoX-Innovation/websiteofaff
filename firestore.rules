@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/site_admins/$(request.auth.uid));
+    }
+
+    // Public catalog: anyone reads, only admins write.
+    match /site_settings/{key} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /offers/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Contact form: anyone can submit, only admins can read/manage.
+    match /contact_messages/{id} {
+      allow create: if request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 5000;
+      allow read, update, delete: if isAdmin();
+    }
+
+    // User profiles: owner (or admin) only.
+    match /profiles/{uid} {
+      allow read, write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    }
+
+    // Admin list is managed manually in the Firebase Console.
+    match /site_admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+  }
+}

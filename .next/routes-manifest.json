@@ -1,0 +1,152 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    },
+    {
+      "source": "/index.html",
+      "destination": "/",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/index\\.html(?:/)?$"
+    },
+    {
+      "source": "/privacy.html",
+      "destination": "/privacy",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/privacy\\.html(?:/)?$"
+    },
+    {
+      "source": "/terms.html",
+      "destination": "/terms",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/terms\\.html(?:/)?$"
+    },
+    {
+      "source": "/contact.html",
+      "destination": "/contact",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/contact\\.html(?:/)?$"
+    },
+    {
+      "source": "/alternatives.html",
+      "destination": "/alternatives",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/alternatives\\.html(?:/)?$"
+    },
+    {
+      "source": "/admin.html",
+      "destination": "/admin",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/admin\\.html(?:/)?$"
+    },
+    {
+      "source": "/watch.html",
+      "destination": "/watch",
+      "statusCode": 308,
+      "regex": "^(?!/_next)/watch\\.html(?:/)?$"
+    }
+  ],
+  "headers": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/watch/[slug]",
+      "regex": "^/watch/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/watch/(?<nxtPslug>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/admin",
+      "regex": "^/admin(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admin(?:/)?$"
+    },
+    {
+      "page": "/alternatives",
+      "regex": "^/alternatives(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/alternatives(?:/)?$"
+    },
+    {
+      "page": "/contact",
+      "regex": "^/contact(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/contact(?:/)?$"
+    },
+    {
+      "page": "/privacy",
+      "regex": "^/privacy(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/privacy(?:/)?$"
+    },
+    {
+      "page": "/robots.txt",
+      "regex": "^/robots\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/robots\\.txt(?:/)?$"
+    },
+    {
+      "page": "/sitemap.xml",
+      "regex": "^/sitemap\\.xml(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/sitemap\\.xml(?:/)?$"
+    },
+    {
+      "page": "/terms",
+      "regex": "^/terms(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/terms(?:/)?$"
+    },
+    {
+      "page": "/watch",
+      "regex": "^/watch(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/watch(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments"
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}
